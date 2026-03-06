@@ -2,7 +2,7 @@
 
 import logging
 from typing import List, Dict, Optional
-
+import datetime
 from app.extensions import db
 from app.models.chat import Conversation, Message
 from app.config import Config
@@ -34,6 +34,26 @@ class ChatService:
     def get_conversation(self, conversation_id: int) -> Optional[Conversation]:
         """Get a conversation by ID."""
         return db.session.get(Conversation, conversation_id)
+    
+    def get_conversation_messages(self, conversation_id: int, limit: int, before_id: Optional[int] = None) -> List[Message]:
+        """Get messages for a conversation."""
+        query = Message.query.filter_by(conversation_id=conversation_id).order_by(Message.id.desc())
+        if before_id:
+            query = query.filter(Message.id < before_id)
+        messages = query.limit(limit).all()
+        return messages
+
+    def update_conversation(self, conversation_id: int, updates: dict) -> Optional[Conversation]:
+        """Update a conversation."""
+        conversation = db.session.get(Conversation, conversation_id)
+        if conversation:
+            conversation.title = updates.get("title", conversation.title)
+            conversation.updated_at = datetime.datetime.now()
+            db.session.commit()
+            logger.info(f"Updated conversation {conversation_id}")
+            return conversation
+        logger.error(f"Conversation {conversation_id} not found")
+        return None
 
     def get_conversations_for_collection(
         self, collection_id: int
@@ -71,12 +91,18 @@ class ChatService:
         db.session.add(message)
 
         # Update conversation title from first user message
+        print("add_message conversation_id: ", conversation_id)
         conversation = db.session.get(Conversation, conversation_id)
+        print("add_message conversation: ", conversation)
+        print("add_message role: ", role)
         if conversation and role == "user":
+            print("add_message checking msg_count")
             msg_count = Message.query.filter_by(
                 conversation_id=conversation_id
             ).count()
-            if msg_count == 0:
+            print("add_message msg_count: ", msg_count)
+            if msg_count == 1:
+                print("add_message setting conversation title")
                 # First message - use it as the title (truncated)
                 conversation.title = content[:100] + ("..." if len(content) > 100 else "")
 

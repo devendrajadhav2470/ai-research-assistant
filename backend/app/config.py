@@ -21,7 +21,7 @@ class Config:
     # File uploads
     UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "./data/uploads")
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50 MB max upload
-
+    MAX_QUESTION_LENGTH = 500 #500 characters
     # FAISS
     FAISS_INDEX_DIR = os.getenv("FAISS_INDEX_DIR", "./data/faiss_indices")
 
@@ -37,9 +37,9 @@ class Config:
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
     ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
     GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-    DEFAULT_LLM_PROVIDER = os.getenv("DEFAULT_LLM_PROVIDER", "openai")
-    DEFAULT_MODEL_NAME = os.getenv("DEFAULT_MODEL_NAME", "gpt-4o-mini")
-
+    DEFAULT_LLM_PROVIDER = os.getenv("DEFAULT_LLM_PROVIDER", "groq")
+    DEFAULT_MODEL_NAME = os.getenv("DEFAULT_MODEL_NAME", "llama-3.3-70b-versatile")
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
     # RAG settings
     CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1000"))
     CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))

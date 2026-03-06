@@ -12,6 +12,9 @@ export function useChat(collectionId: number | null) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [hasMoreMessages,setHasMoreMessages] = useState(false);
+  const loadingOlderRef = useRef(false);
 
   const fetchConversations = useCallback(async () => {
     if (!collectionId) return;
@@ -27,8 +30,14 @@ export function useChat(collectionId: number | null) {
     try {
       setLoading(true);
       const data = await api.getConversation(conversationId);
-      setActiveConversation(data);
-      setMessages(data.messages || []);
+      setActiveConversation(data.conversation);
+      setMessages(data.conversation.messages || []);
+      if(data.hasOlder){
+        setHasMoreMessages(true);
+      }
+      else{
+        setHasMoreMessages(false);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -36,13 +45,61 @@ export function useChat(collectionId: number | null) {
     }
   }, []);
 
+  const loadConversationMessages = useCallback(async () => {
+    if(!activeConversation || messages.length === 0){
+      console.log("loadConversationMessages: NO active conversation");
+      return;
+    }
+    if(loadingOlderRef.current){
+      return;
+    }
+    loadingOlderRef.current = true;
+    try {
+      setLoadingMessages(true);
+      const data = await api.getConversationMessages(activeConversation.id,10, messages[0].id);
+      if(data.hasOlder){
+        setHasMoreMessages(true);
+      }
+      else{
+        setHasMoreMessages(false);
+      }
+      setMessages([...data.messages,...messages]);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoadingMessages(false);
+      loadingOlderRef.current = false;
+    }
+  }, [activeConversation,messages[0]?.id]);
+
   const startNewConversation = useCallback(() => {
     setActiveConversation(null);
     setMessages([]);
+    setHasMoreMessages(false);
     setStreamingContent('');
     setStreamingCitations([]);
     setError(null);
   }, []);
+
+  const updateConversationTitle = useCallback(async ( conversationId: number, name: string) => {
+    try{
+      const trimmed = name.trim();
+      if(trimmed === '') return;
+      const currentTitle = conversations.find((c) => c.id === conversationId)?.title || '';
+      if(currentTitle === trimmed) return;
+      const conversationUpdates: Partial<Conversation> = {
+        title: trimmed
+      };
+     const data = await api.updateConversation(conversationId, conversationUpdates);
+     setConversations(prev => prev.map(c=> c.id === data.id ? data: c));
+     if(activeConversation?.id === conversationId){
+      setActiveConversation(data);
+     }
+    }
+    catch(err: any){
+      setError(err.message);
+    }
+  }, [activeConversation])
 
   const sendMessage = useCallback(
     async (
@@ -87,7 +144,7 @@ export function useChat(collectionId: number | null) {
           },
           onDone: (data) => {
             const assistantMessage: Message = {
-              id: Date.now() + 1,
+              id: data.message_id || Date.now(),
               conversation_id: data.conversation_id,
               role: 'assistant',
               content: data.answer,
@@ -122,6 +179,7 @@ export function useChat(collectionId: number | null) {
             setError(errMsg);
             setIsStreaming(false);
             setStreamingContent('');
+            setMessages((prev) => prev.slice(0, -1));
           },
         },
       );
@@ -172,14 +230,18 @@ export function useChat(collectionId: number | null) {
     streamingCitations,
     isStreaming,
     loading,
+    loadingMessages,
+    hasMoreMessages,
     error,
     fetchConversations,
     loadConversation,
+    loadConversationMessages,
     startNewConversation,
     sendMessage,
     stopStreaming,
     removeConversation,
     setActiveConversation,
+    updateConversationTitle
   };
 }
 

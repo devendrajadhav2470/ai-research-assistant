@@ -51,6 +51,12 @@ def upload_document(collection_id):
     if not file.filename.lower().endswith(".pdf"):
         return jsonify({"error": "Only PDF files are supported"}), 400
 
+    file.seek(0,2)
+    file_size = file.tell()
+    file.seek(0)
+
+    if(file_size > Config.MAX_CONTENT_LENGTH):
+        return jsonify({"error": "PDF too large (max 50MB)"})
     # Save the file
     upload_dir = os.path.join(Config.UPLOAD_FOLDER, str(collection_id))
     os.makedirs(upload_dir, exist_ok=True)

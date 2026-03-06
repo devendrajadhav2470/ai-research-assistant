@@ -46,8 +46,9 @@ export default function DocumentUpload({
     onDrop: (acceptedFiles) => {
       acceptedFiles.forEach((file) => onUpload(file));
     },
-    accept: { 'application/pdf': ['.pdf'] },
+    accept: { 'application/pdf': ['.pdf']},
     disabled: uploading,
+    maxSize: 50 * 1024 * 1024, // 50 MB
     multiple: true,
   });
 

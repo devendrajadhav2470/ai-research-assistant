@@ -6,15 +6,20 @@ import DocumentUpload from './components/DocumentUpload';
 import { useCollections } from './hooks/useCollections';
 import { useDocuments } from './hooks/useDocuments';
 import { useChat } from './hooks/useChat';
-import { evaluateMessage } from './services/api';
+import { evaluateMessage, getBackendStatus } from './services/api';
+import BackendUnhealthyBanner from './components/BackendUnhealthyBanner';
+import { BackendStatus } from './types';
 
 export default function App() {
   // Model selection
-  const [selectedProvider, setSelectedProvider] = useState('openai');
-  const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
+  const [selectedProvider, setSelectedProvider] = useState('groq');
+  const [selectedModel, setSelectedModel] = useState('llama-3.3-70b-versatile');
 
   // Document upload modal
   const [showDocuments, setShowDocuments] = useState(false);
+
+  // Backend status
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>({ status: 'unhealthy', service: 'backend' });
 
   // Evaluation state
   const [evaluatingId, setEvaluatingId] = useState<number | null>(null);
@@ -48,16 +53,28 @@ export default function App() {
     streamingCitations,
     isStreaming,
     loading: chatLoading,
+    loadingMessages: loadingMessages,
+    hasMoreMessages: hasMoreMessages,
     error: chatError,
     fetchConversations,
     loadConversation,
+    loadConversationMessages,
     startNewConversation,
     sendMessage,
     stopStreaming,
     removeConversation,
+    updateConversationTitle
   } = useChat(activeCollection?.id ?? null);
 
   // Fetch conversations when collection changes
+
+
+
+  useEffect(() => {
+    getBackendStatus().then((status) => {
+      setBackendStatus(status);
+    });
+  }, []);
   useEffect(() => {
     if (activeCollection) {
       fetchConversations();
@@ -90,7 +107,7 @@ export default function App() {
           loadConversation(activeConversation.id);
         }
       } catch {
-        // Error handled silently
+        console.error("Error evaluating message");
       } finally {
         setEvaluatingId(null);
       }
@@ -100,6 +117,7 @@ export default function App() {
 
   return (
     <div className="h-screen flex flex-col">
+      <BackendUnhealthyBanner status={backendStatus} />
       <Header
         selectedProvider={selectedProvider}
         selectedModel={selectedModel}
@@ -118,6 +136,7 @@ export default function App() {
           onSelectConversation={loadConversation}
           onNewConversation={startNewConversation}
           onDeleteConversation={removeConversation}
+          onEditConversation={updateConversationTitle}
           onOpenDocuments={() => setShowDocuments(true)}
         />
 
@@ -127,11 +146,14 @@ export default function App() {
           streamingCitations={streamingCitations}
           isStreaming={isStreaming}
           loading={chatLoading}
+          loadingMessages={loadingMessages}
+          hasMoreMessages={hasMoreMessages}
           error={chatError}
           collectionName={activeCollection?.name ?? null}
           onSendMessage={handleSendMessage}
           onStopStreaming={stopStreaming}
           onEvaluate={handleEvaluate}
+          onLoadMoreMessages={loadConversationMessages}
           evaluatingId={evaluatingId}
         />
       </div>

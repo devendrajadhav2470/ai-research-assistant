@@ -3,20 +3,21 @@
 import json
 import logging
 from flask import Blueprint, request, jsonify, Response, stream_with_context
-
+from app.config import Config
 from app.extensions import db
 from app.models.document import Collection
 from app.models.chat import Conversation, Message
 from app.services.rag_pipeline import RAGPipeline
 from app.services.chat_service import ChatService
 from app.services.llm_service import LLMService
+import re
 
 logger = logging.getLogger(__name__)
 
 chat_bp = Blueprint("chat", __name__)
 
 
-@chat_bp.route("/conversations/<int:collection_id>", methods=["GET"])
+@chat_bp.route("/conversations/collection/<int:collection_id>", methods=["GET"])
 def list_conversations(collection_id):
     """List all conversations in a collection."""
     collection = db.session.get(Collection, collection_id)
@@ -49,13 +50,48 @@ def create_conversation():
 
 @chat_bp.route("/conversations/<int:conversation_id>", methods=["GET"])
 def get_conversation(conversation_id):
-    """Get a conversation with its messages."""
+    """Get a conversation with its messages, supporting pagination."""
+    limit = request.args.get("limit", 10, type=int)
+    before_id = request.args.get("before_id", type=int)
+    limit = min(limit, 100)
+
     chat_service = ChatService()
     conversation = chat_service.get_conversation(conversation_id)
+
     if not conversation:
         return jsonify({"error": "Conversation not found"}), 404
-    return jsonify(conversation.to_dict(include_messages=True))
 
+    messages = chat_service.get_conversation_messages(conversation_id, limit+1, before_id)
+    messages.reverse()
+
+    conv_dict = conversation.to_dict(include_messages=False)
+    
+    if(len(messages)>limit):
+        messages = messages[1:]
+        conv_dict["messages"] = [m.to_dict() for m in messages]
+        conv_dict["hasOlder"] = True
+    else: 
+        conv_dict["messages"] = [m.to_dict() for m in messages]
+        conv_dict["hasOlder"] = False
+    return jsonify(conv_dict)
+
+
+
+
+
+@chat_bp.route("/conversations/<int:conversation_id>", methods=["PATCH"])
+def update_conversation(conversation_id):
+    """Update a conversation."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Request body is required"}), 400
+    if not data.get("title"):
+        return jsonify({"error": "title is required"}), 400
+    chat_service = ChatService()
+    conversation = chat_service.update_conversation(conversation_id, data)
+    if not conversation:
+        return jsonify({"error": "Conversation not found"}), 404
+    return jsonify(conversation.to_dict())
 
 @chat_bp.route("/conversations/<int:conversation_id>", methods=["DELETE"])
 def delete_conversation(conversation_id):
@@ -85,6 +121,10 @@ def query():
         return jsonify({"error": "Request body is required"}), 400
 
     question = data.get("question", "").strip()
+    question = re.sub(r"\s+", " ", question)
+
+    if(len(question) > Config.MAX_QUESTION_LENGTH):
+        return jsonify({"error": "Question too long (Max length: 500 chars)"})
     collection_id = data.get("collection_id")
 
     if not question:
@@ -100,8 +140,15 @@ def query():
     provider = data.get("provider")
     model_name = data.get("model_name")
 
-    # Create conversation if not provided
+    #Validate conversation_id belongs to collection_id
     chat_service = ChatService()
+    if conversation_id:
+        conversation = chat_service.get_conversation(conversation_id)
+        if(collection_id != conversation.collection_id):
+            return jsonify({"error": "Conversation does not belong to collection"})
+
+
+    # Create conversation if not provided
     if not conversation_id:
         conversation = chat_service.create_conversation(collection_id)
         conversation_id = conversation.id
@@ -173,8 +220,15 @@ def query_stream():
     provider = data.get("provider")
     model_name = data.get("model_name")
 
-    # Create conversation if needed
+    
+    #Validate conversation_id belongs to collection_id
     chat_service = ChatService()
+    if conversation_id:
+        conversation = chat_service.get_conversation(conversation_id)
+        if(collection_id != conversation.collection_id):
+            return jsonify({"error": "Conversation does not belong to collection"})
+
+    # Create conversation if needed
     if not conversation_id:
         conversation = chat_service.create_conversation(collection_id)
         conversation_id = conversation.id
@@ -204,7 +258,7 @@ def query_stream():
                 final_data = event["data"]
 
                 # Save assistant message
-                chat_service.add_message(
+                message = chat_service.add_message(
                     conversation_id=conversation_id,
                     role="assistant",
                     content=final_data["answer"],
@@ -215,6 +269,7 @@ def query_stream():
 
                 # Include conversation_id in done event
                 final_data["conversation_id"] = conversation_id
+                final_data["message_id"] = message.id
                 event_data = json.dumps(final_data)
 
             yield f"event: {event_type}\ndata: {event_data}\n\n"

@@ -6,9 +6,11 @@ import type {
   Collection,
   Document,
   Conversation,
+  Message,
   QueryResponse,
   AvailableModels,
   Evaluation,
+  BackendStatus,
 } from '../types';
 
 const API_BASE = '/api';
@@ -20,6 +22,10 @@ const api = axios.create({
   },
 });
 
+export async function getBackendStatus(): Promise<BackendStatus> {
+  const { data } = await api.get('/health');
+  return data;
+}
 // ==================== Collections ====================
 
 export async function getCollections(): Promise<Collection[]> {
@@ -65,7 +71,7 @@ export async function deleteDocument(documentId: number): Promise<void> {
 // ==================== Chat ====================
 
 export async function getConversations(collectionId: number): Promise<Conversation[]> {
-  const { data } = await api.get(`/chat/conversations/${collectionId}`);
+  const { data } = await api.get(`/chat/conversations/collection/${collectionId}`);
   return data;
 }
 
@@ -77,8 +83,28 @@ export async function createConversation(collectionId: number, title?: string): 
   return data;
 }
 
-export async function getConversation(conversationId: number): Promise<Conversation> {
+export async function getConversation(conversationId: number): Promise<{conversation: Conversation; hasOlder: boolean}> {
   const { data } = await api.get(`/chat/conversations/${conversationId}`);
+  const {hasOlder, ...conversation} = data;
+  return {
+    conversation,
+    hasOlder: hasOlder 
+  };
+}
+
+export async function getConversationMessages(conversationId: number, limit: number, beforeId?: number | null): Promise<{messages: Message[]; hasOlder: boolean}> {
+  const url = beforeId != null
+  ? `/chat/conversations/${conversationId}?limit=${limit}&before_id=${beforeId}`
+  : `/chat/conversations/${conversationId}?limit=${limit}`;
+  const { data } = await api.get(url);
+  return {
+    messages: data.messages ?? [],
+    hasOlder: data.hasOlder === true,
+  };
+}
+
+export async function updateConversation(conversationId: number, updates: Partial<Conversation>): Promise<Conversation> {
+  const { data } = await api.patch(`/chat/conversations/${conversationId}`, updates);
   return data;
 }
 

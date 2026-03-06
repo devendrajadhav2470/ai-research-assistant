@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect,useLayoutEffect } from 'react';
 import { Send, Square, Bot, Loader2, BookOpen } from 'lucide-react';
 import type { Message, Citation } from '../types';
 import MessageBubble from './MessageBubble';
@@ -11,11 +11,14 @@ interface ChatInterfaceProps {
   streamingCitations: Citation[];
   isStreaming: boolean;
   loading: boolean;
+  loadingMessages: boolean;
+  hasMoreMessages: boolean;
   error: string | null;
   collectionName: string | null;
   onSendMessage: (message: string) => void;
   onStopStreaming: () => void;
   onEvaluate: (messageId: number) => void;
+  onLoadMoreMessages: () => void;
   evaluatingId: number | null;
 }
 
@@ -25,21 +28,36 @@ export default function ChatInterface({
   streamingCitations,
   isStreaming,
   loading,
+  loadingMessages,
+  hasMoreMessages,
   error,
   collectionName,
   onSendMessage,
   onStopStreaming,
   onEvaluate,
+  onLoadMoreMessages,
   evaluatingId,
 }: ChatInterfaceProps) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const didPrependRef = useRef(false);
   // Auto-scroll to bottom
   useEffect(() => {
+    if (didPrependRef.current){
+        didPrependRef.current = false;
+       return;
+    }
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingContent]);
+
+  // Used to prevent scroll jump when we prepend messages
+    const pendingPrependRef = useRef<{
+      prevScrollHeight: number;
+      prevScrollTop: number;
+    } | null>(null);
+  
 
   // Auto-resize textarea
   useEffect(() => {
@@ -48,6 +66,42 @@ export default function ChatInterface({
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
     }
   }, [input]);
+
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const pending = pendingPrependRef.current;
+  
+    if (!container || !pending) return;
+  
+    const newScrollHeight = container.scrollHeight;
+    const heightDiff = newScrollHeight - pending.prevScrollHeight;
+  
+    container.scrollTop = pending.prevScrollTop + heightDiff;
+  
+    pendingPrependRef.current = null; // clear it
+  }, [messages.length]);
+
+  // Scroll handler: when near top, load older
+  function onScroll() {
+    if(loadingMessages || !hasMoreMessages){
+      return;
+    }
+    const el = containerRef.current;
+    if (!el) return;
+    
+    // “Near top” threshold (px)
+
+    if (el.scrollTop < 80) {
+      pendingPrependRef.current = {
+          prevScrollHeight: el.scrollHeight,
+          prevScrollTop: el.scrollTop,
+        };
+      didPrependRef.current = true;
+      void onLoadMoreMessages();
+    }
+  }
+
 
   const handleSubmit = () => {
     const trimmed = input.trim();
@@ -67,7 +121,7 @@ export default function ChatInterface({
   return (
     <div className="flex-1 flex flex-col bg-gray-50 h-full">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-6 py-6">
+      <div className="flex-1 overflow-y-auto px-6 py-6" ref={containerRef} onScroll={onScroll}>
         {messages.length === 0 && !isStreaming && (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="bg-indigo-100 p-4 rounded-full mb-4">
@@ -103,7 +157,19 @@ export default function ChatInterface({
           </div>
         )}
 
+
+
+
         <div className="space-y-6 max-w-4xl mx-auto">
+          {loadingMessages && hasMoreMessages && (
+            <div style={{ padding: 8, textAlign: "center" }}>Loading…</div>
+          )}
+          {!hasMoreMessages && (
+            <div style={{ padding: 8, textAlign: "center", opacity: 0.7 }}>
+              No more messages
+            </div>
+          )}
+
           {messages.map((msg) => (
             <MessageBubble
               key={msg.id}

@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Library,
   FileText,
+  Pencil
 } from 'lucide-react';
 import type { Collection, Conversation, Document } from '../types';
 import * as api from '../services/api';
@@ -22,6 +23,7 @@ interface CollectionSidebarProps {
   onSelectConversation: (id: number) => void;
   onNewConversation: () => void;
   onDeleteConversation: (id: number) => void;
+  onEditConversation: (id: number, name: string) => void;
   onOpenDocuments: () => void;
 }
 
@@ -31,11 +33,12 @@ export default function CollectionSidebar({
   conversations,
   activeConversationId,
   onSelectCollection,
-  onCreateCollection,
+  onCreateCollection, 
   onDeleteCollection,
   onSelectConversation,
   onNewConversation,
   onDeleteConversation,
+  onEditConversation,
   onOpenDocuments,
 }: CollectionSidebarProps) {
   const [showNewForm, setShowNewForm] = useState(false);
@@ -43,6 +46,8 @@ export default function CollectionSidebar({
   const [newDesc, setNewDesc] = useState('');
   const [expandedCollections, setExpandedCollections] = useState<Set<number>>(new Set());
   const [collectionDocs, setCollectionDocs] = useState<Record<number, Document[]>>({});
+  const [editingConversationId, setEditingConversationId] = useState<number | null>(null);
+  const [editingConversationTitle, setEditingConversationTitle] = useState<string>("");
 
   const handleCreate = () => {
     if (newName.trim()) {
@@ -259,7 +264,56 @@ export default function CollectionSidebar({
                     : 'hover:bg-gray-800 text-gray-400'
                 }`}
               >
+                { editingConversationId ===  conv.id ?
+                  <input
+                    type="text"
+                    value={editingConversationTitle}
+                    onChange={(e)=>setEditingConversationTitle(e.target.value)}
+                    autoFocus
+                    onClick={(e) => e.stopPropagation()}
+                    onBlur={(e) => {
+                      if(editingConversationTitle.trim() === ''){
+                        setEditingConversationId(null);
+                      }
+                      else{
+                      onEditConversation(conv.id, editingConversationTitle);
+                      setEditingConversationId(null);
+                      setEditingConversationTitle('');
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if(editingConversationTitle.trim() === ''){
+                          setEditingConversationId(null);
+                        }
+                        else{
+                        onEditConversation(conv.id, editingConversationTitle);
+                        setEditingConversationId(null);
+                        setEditingConversationTitle('');
+                        }
+                      } else if (e.key === "Escape") {
+                        e.preventDefault();
+                        setEditingConversationId(null);
+                        setEditingConversationTitle('');
+                      }
+                    }}
+                    className="flex-1 px-2 py-1 rounded bg-gray-800 text-white"
+                  />:
                 <span className="truncate flex-1">{conv.title}</span>
+              }
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingConversationTitle(conv.title);
+                    setEditingConversationId(conv.id);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-600 rounded transition-all"
+                >
+                  <Pencil size={12} />
+                </button>
+
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

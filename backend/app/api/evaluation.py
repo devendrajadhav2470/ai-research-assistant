@@ -25,10 +25,12 @@ def evaluate_message(message_id):
         "model_name": "string"
     }
     """
+    print("evaluate_message message_id: ", message_id)
     message = db.session.get(Message, message_id)
     if not message:
         return jsonify({"error": "Message not found"}), 404
 
+    print("evaluate_message message: ", message)
     if message.role != "assistant":
         return jsonify({"error": "Can only evaluate assistant messages"}), 400
 
@@ -68,6 +70,7 @@ def evaluate_message(message_id):
         provider=provider,
         model_name=model_name,
     )
+    print("evaluate_message evaluation: ", evaluation)
 
     # Save evaluation to the message
     chat_service = ChatService()

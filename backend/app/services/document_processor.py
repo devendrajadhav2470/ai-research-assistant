@@ -5,7 +5,9 @@ import logging
 from typing import List, Dict, Any
 
 from pypdf import PdfReader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_experimental.text_splitter import SemanticChunker
+from langchain_huggingface import HuggingFaceEmbeddings 
+
 
 from app.config import Config
 
@@ -22,11 +24,13 @@ class DocumentProcessor:
     ):
         self.chunk_size = chunk_size or Config.CHUNK_SIZE
         self.chunk_overlap = chunk_overlap or Config.CHUNK_OVERLAP
-        self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=self.chunk_size,
-            chunk_overlap=self.chunk_overlap,
-            length_function=len,
-            separators=["\n\n", "\n", ". ", " ", ""],
+
+        self.embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+
+        self.chunker = SemanticChunker(
+            embeddings=self.embeddings,
+            breakpoint_threshold_type="percentile",  # default
+            breakpoint_threshold_amount=95,          # default for percentile
         )
 
     def extract_text_from_pdf(self, file_path: str) -> List[Dict[str, Any]]:
@@ -74,12 +78,13 @@ class DocumentProcessor:
         chunks = []
         chunk_index = 0
 
+
         for page_data in pages:
             page_number = page_data["page_number"]
             text = page_data["text"]
 
             # Split page text into chunks
-            page_chunks = self.text_splitter.split_text(text)
+            page_chunks = self.chunker.split_text(text)
 
             for chunk_text in page_chunks:
                 chunks.append({

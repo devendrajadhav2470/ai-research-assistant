@@ -2,6 +2,12 @@
 // AI Research Assistant - TypeScript Types
 // ==========================================
 
+
+export interface BackendStatus {
+  status: string;
+  service: string;
+}
+
 // --- Collections ---
 export interface Collection {
   id: number;
