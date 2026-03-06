@@ -3,6 +3,7 @@
 import os
 import logging
 import uuid
+
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 
@@ -36,7 +37,9 @@ def list_documents(collection_id):
 
 @documents_bp.route("/upload/<int:collection_id>", methods=["POST"])
 def upload_document(collection_id):
-    """Upload a PDF document to a collection and process it."""
+    """Upload a document to a collection and process it."""
+
+    SUPPORTED_FILE_TYPES = [".pdf",".docx"]
     collection = db.session.get(Collection, collection_id)
     if not collection:
         return jsonify({"error": "Collection not found"}), 404
@@ -48,21 +51,22 @@ def upload_document(collection_id):
     if not file.filename:
         return jsonify({"error": "No file selected"}), 400
 
-    if not file.filename.lower().endswith(".pdf"):
-        return jsonify({"error": "Only PDF files are supported"}), 400
+    if not any(file.filename.lower().endswith(ext) for ext in SUPPORTED_FILE_TYPES):
+        return jsonify({"error": f"Only {str(SUPPORTED_FILE_TYPES)} files are supported"}), 400
 
     file.seek(0,2)
     file_size = file.tell()
     file.seek(0)
 
-    if(file_size > Config.MAX_CONTENT_LENGTH):
-        return jsonify({"error": "PDF too large (max 50MB)"})
+    if file_size > Config.MAX_CONTENT_LENGTH:
+        return jsonify({"error": "File too large (max 50MB)"}), 413
     # Save the file
     upload_dir = os.path.join(Config.UPLOAD_FOLDER, str(collection_id))
     os.makedirs(upload_dir, exist_ok=True)
 
     # Sanitize filename and add UUID prefix to avoid collisions
-    sanitized_name = secure_filename(file.filename) or "document.pdf"
+    ext = os.path.splitext(file.filename or "")[1].lower() or ".pdf"
+    sanitized_name = secure_filename(file.filename) or f"document{ext}"
     safe_filename = f"{uuid.uuid4().hex[:8]}_{sanitized_name}"
     file_path = os.path.join(upload_dir, safe_filename)
     file.save(file_path)
@@ -83,7 +87,7 @@ def upload_document(collection_id):
     # Process the document
     try:
         processor = DocumentProcessor()
-        result = processor.process_pdf(file_path, file.filename)
+        result = processor.process_document(file_path, file.filename)
 
         # Save chunks to database
         chunk_models = []
