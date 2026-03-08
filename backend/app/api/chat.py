@@ -124,7 +124,7 @@ def query():
     question = re.sub(r"\s+", " ", question)
 
     if(len(question) > Config.MAX_QUESTION_LENGTH):
-        return jsonify({"error": "Question too long (Max length: 500 chars)"})
+        return jsonify({"error": "Question too long (Max length: 500 chars)"}), 400
     collection_id = data.get("collection_id")
 
     if not question:
