@@ -146,4 +146,23 @@ class VectorStore:
             "total_vectors": collection.count(),
             "dimension": samples["embeddings"][0].shape[0],
         }
+    
+    def delete_document_vectors(self,collection_id: int,document_id: int, dimension: int) -> None:
+        try:
+            collection = self.chroma_client.get_collection(name= self._get_collection_name(collection_id))
+        except Exception as e:
+            logger.error(f"there was an error getting collection_{collection_id} from chroma db")
+            return
+        
+        try: 
+            collection.delete(
+                where={
+                    "document_id": document_id
+                }
+            )
+        except Exception as e: 
+            logger.error(f"there was an error deleting document vectors from vector store {e}")
+
+        return
+
 
