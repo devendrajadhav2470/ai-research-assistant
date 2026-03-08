@@ -132,19 +132,19 @@ class VectorStore:
 
         logger.info(f"Deleted collection {collection_id}")
 
-    def get_collection_stats(self, collection_id: int, dimension: int = 384) -> Dict[str, Any]:
+    def get_collection_stats(self, collection_id: int, dimension: int = 768) -> Dict[str, Any]:
         """Get statistics about a collection's index."""
         try:
             collection = self.chroma_client.get_collection(name= self._get_collection_name(collection_id))
         except Exception as e:
             logger.error(f"there was an error getting collection {collection_id} from chroma db")
-            return
+            return {}
         
-        samples = collection.peek(limit = 1)
+
         return {
             "collection_id": collection_id,
             "total_vectors": collection.count(),
-            "dimension": samples["embeddings"][0].shape[0],
+            "dimension": dimension,
         }
     
     def delete_document_vectors(self,collection_id: int,document_id: int, dimension: int) -> None:
