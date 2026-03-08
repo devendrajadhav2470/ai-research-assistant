@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import logging
 from typing import List, Dict, Any
-from readability import Document as ReadabilityDocument
+from readability import Document as ReadabilityDocument  # pyright: ignore[reportMissingImports]
 from docx import Document as DocxDocument
 from pypdf import PdfReader
 from langchain_experimental.text_splitter import SemanticChunker
@@ -93,11 +93,9 @@ class DocumentProcessor:
                     else:
                         resources = page.get("/Resources")
                         
-                        logger.debug("inside extract text from document, image extraction 0")
                         if not resources: 
-                            continue
-                        logger.debug("inside extract text from document, image extraction 0")
-                        
+                            continue                 
+                               
                         # TO DO FIX: should not pass file_path here, this way 
                         # Every time i have to read the whole pdf from the disk
                         image_text = ocr_entire_page(file_path, i)

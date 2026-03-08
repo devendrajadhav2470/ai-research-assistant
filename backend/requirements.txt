@@ -11,6 +11,7 @@ langchain-groq>=0.2.4
 langchain-community>=0.3.14
 langchain-core>=0.3.33
 langchain_experimental
+langchain-google-genai
 
 # Embeddings & Vector Store
 sentence-transformers>=3.3.1
@@ -33,3 +34,10 @@ langfuse>=2.58.0
 python-dotenv==1.0.1
 marshmallow>=3.23.0
 nltk>=3.9.1
+
+readability-lxml
+chromadb
+beautifulsoup4
+pillow
+pytesseract
+pymupdf

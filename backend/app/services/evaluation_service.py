@@ -101,7 +101,7 @@ class EvaluationService:
             {"role": "user", "content": eval_prompt},
         ]
 
-        print("evaluation_service messages:")
+        logger.debug("evaluation_service messages:")
         try:
             response = self.llm_service.generate(
                 messages=messages,
@@ -109,7 +109,7 @@ class EvaluationService:
                 model_name=model_name,
                 temperature=0.0,  # Deterministic for evaluation
             )
-            print("evaluation_service response: ")
+            logger.debug("evaluation_service response: ")
             evaluation = self._parse_evaluation_response(response)
             logger.info(
                 f"Evaluation complete. Overall score: {evaluation.get('overall_score', 'N/A')}"

@@ -26,7 +26,7 @@ class Config:
     FAISS_INDEX_DIR = os.getenv("FAISS_INDEX_DIR", "./data/faiss_indices")
 
     # Embedding model
-    EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
+    EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "BAAI/bge-base-en-v1.5")
 
     # Reranker model
     RERANKER_MODEL_NAME = os.getenv(
