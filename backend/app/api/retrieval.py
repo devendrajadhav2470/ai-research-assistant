@@ -34,7 +34,7 @@ def get_chunks():
     question = re.sub(r"\s+", " ", question)
 
     if(len(question) > Config.MAX_QUESTION_LENGTH):
-        return jsonify({"error": f"user question too long (Max length: {Config.MAX_QUESTION_LENGTH} chars)"})
+        return jsonify({"error": f"user question too long (Max length: {Config.MAX_QUESTION_LENGTH} chars)"}), 400
     
 
     retrieval_service = HybridRetriever()

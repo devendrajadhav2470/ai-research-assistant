@@ -145,7 +145,7 @@ def query():
     if conversation_id:
         conversation = chat_service.get_conversation(conversation_id)
         if(collection_id != conversation.collection_id):
-            return jsonify({"error": "Conversation does not belong to collection"})
+            return jsonify({"error": "Conversation does not belong to collection"}), 404
 
 
     # Create conversation if not provided
@@ -226,7 +226,7 @@ def query_stream():
     if conversation_id:
         conversation = chat_service.get_conversation(conversation_id)
         if(collection_id != conversation.collection_id):
-            return jsonify({"error": "Conversation does not belong to collection"})
+            return jsonify({"error": "Conversation does not belong to collection"}), 404
 
     # Create conversation if needed
     if not conversation_id:
