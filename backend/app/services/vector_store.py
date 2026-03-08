@@ -40,7 +40,7 @@ class VectorStore:
             logger.error(f"Failed to create or get ChromaDB collection for collection {collection_id}: {e}")
             self.chroma_collection = None
     
-    def _sigmoid(self, x: float):
+    def _temp_transform(self, x: float):
         return 1/(np.exp(x)+1)
 
     def add_vectors(
@@ -113,7 +113,7 @@ class VectorStore:
         results = []
         for i in range(len(query_results['ids'][0])):
             distance = query_results['distances'][0][i]
-            results.append((query_results['metadatas'][0][i], self._sigmoid(distance)))
+            results.append((query_results['metadatas'][0][i], self._temp_transform(distance)))
 
         return results
 
