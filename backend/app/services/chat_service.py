@@ -25,7 +25,7 @@ class ChatService:
             title=title,
         )
         db.session.add(conversation)
-        db.session.commit()
+        db.session.commit() 
         logger.info(
             f"Created conversation {conversation.id} in collection {collection_id}"
         )
@@ -91,18 +91,18 @@ class ChatService:
         db.session.add(message)
 
         # Update conversation title from first user message
-        print("add_message conversation_id: ", conversation_id)
+        logger.debug("add_message conversation_id: %s", conversation_id)
         conversation = db.session.get(Conversation, conversation_id)
-        print("add_message conversation: ", conversation)
-        print("add_message role: ", role)
+        logger.debug("add_message conversation: %s", conversation)
+        logger.debug("add_message role: %s", role)
         if conversation and role == "user":
-            print("add_message checking msg_count")
+            logger.debug("add_message checking msg_count")
             msg_count = Message.query.filter_by(
                 conversation_id=conversation_id
             ).count()
-            print("add_message msg_count: ", msg_count)
+            logger.debug("add_message msg_count: %s", msg_count)
             if msg_count == 1:
-                print("add_message setting conversation title")
+                logger.debug("add_message setting conversation title")
                 # First message - use it as the title (truncated)
                 conversation.title = content[:100] + ("..." if len(content) > 100 else "")
 
