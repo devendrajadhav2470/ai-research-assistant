@@ -266,11 +266,18 @@ class RAGPipeline:
 
             if key not in seen:
                 seen.add(key)
+                
+                content_preview = chunk.get("content", "")[:201]
+                if len(content_preview) > 200 :
+                    content_preview = content_preview + "..."
+                else:
+                    content_preview = content_preview[:-1]
+
                 citations.append({
                     "source": source,
                     "page_number": page,
                     "document_id": doc_id,
-                    "content_preview": chunk.get("content", "")[:200] + "...",
+                    "content_preview": content_preview,
                     "relevance_score": round(chunk.get("rerank_score", 0), 3),
                 })
 
