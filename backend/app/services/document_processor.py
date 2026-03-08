@@ -9,23 +9,14 @@ from pypdf import PdfReader
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain_huggingface import HuggingFaceEmbeddings 
 from bs4 import BeautifulSoup
+import io
+from PIL import Image
+import pytesseract
+import fitz  # PyMuPDF
 
 from app.config import Config
 
 logger = logging.getLogger(__name__)
-
-
-
-
-import io
-from dataclasses import dataclass
-from typing import Dict, List, Set, Tuple
-
-from pypdf import PdfReader
-from pypdf.generic import IndirectObject
-from PIL import Image
-import pytesseract
-import fitz  # PyMuPDF
 
 pytesseract.pytesseract.tesseract_cmd = Config.TESSERACT_EXE_PATH
 
