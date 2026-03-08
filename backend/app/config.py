@@ -52,3 +52,4 @@ class Config:
     LANGFUSE_SECRET_KEY = os.getenv("LANGFUSE_SECRET_KEY", "")
     LANGFUSE_HOST = os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
 
+    TESSERACT_EXE_PATH = os.getenv("TESSERACT_EXE_PATH","")
