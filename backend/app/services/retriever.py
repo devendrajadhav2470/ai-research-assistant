@@ -3,6 +3,7 @@
 import logging
 from typing import List, Dict, Any, Tuple
 
+
 from sentence_transformers import CrossEncoder
 
 from app.config import Config
@@ -76,6 +77,10 @@ class HybridRetriever:
             top_k=self.top_k_retrieval,
             dimension=self.embedding_service.dimension,
         )
+
+        if not vector_results:
+            logger.error(f"there was an error retrieving vectors from vector_store")
+            return 
 
         # Step 2: BM25 keyword search
         bm25_results = self.bm25_index.search(
