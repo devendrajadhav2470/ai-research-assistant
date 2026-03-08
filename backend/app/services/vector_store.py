@@ -103,7 +103,7 @@ class VectorStore:
             collection = self.chroma_client.get_collection(name= self._get_collection_name(collection_id))
         except Exception as e:
             logger.error(f"there was an error getting collection {collection_id} from chroma db")
-            return
+            return []
 
         query_results = collection.query(
             query_embeddings = [query_embedding],

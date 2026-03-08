@@ -80,7 +80,7 @@ class HybridRetriever:
 
         if not vector_results:
             logger.error(f"there was an error retrieving vectors from vector_store")
-            return 
+            return []
 
         # Step 2: BM25 keyword search
         bm25_results = self.bm25_index.search(
