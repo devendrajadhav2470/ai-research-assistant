@@ -3,6 +3,7 @@
 import os
 import logging
 import uuid
+import hashlib
 
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
@@ -14,6 +15,7 @@ from app.services.embedding_service import EmbeddingService
 from app.services.vector_store import VectorStore
 from app.services.bm25_index import BM25Index
 from app.config import Config
+import json 
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +41,7 @@ def list_documents(collection_id):
 def upload_document(collection_id):
     """Upload a document to a collection and process it."""
 
-    SUPPORTED_FILE_TYPES = [".pdf",".docx"]
+    SUPPORTED_FILE_TYPES = [".pdf",".docx", ".txt", ".md",".html"]
     collection = db.session.get(Collection, collection_id)
     if not collection:
         return jsonify({"error": "Collection not found"}), 404
@@ -91,13 +93,19 @@ def upload_document(collection_id):
 
         # Save chunks to database
         chunk_models = []
+        chunk_ids = []
         for chunk_data in result["chunks"]:
+
+            raw_chunk_id =f"{chunk_data["metadata"]["source"]}::{chunk_data["chunk_index"]}::{chunk_data["content"]}".encode("utf-8")
+            chunk_id =  hashlib.sha256(raw_chunk_id).hexdigest()
+            chunk_ids.append(chunk_id)
             chunk = Chunk(
                 document_id=document.id,
+                id = chunk_id,
                 content=chunk_data["content"],
                 page_number=chunk_data["page_number"],
                 chunk_index=chunk_data["chunk_index"],
-                metadata_json=str(chunk_data["metadata"]),
+                metadata_json=json.dumps(chunk_data["metadata"]),
             )
             chunk_models.append(chunk)
             db.session.add(chunk)
@@ -107,11 +115,9 @@ def upload_document(collection_id):
         texts = [c["content"] for c in result["chunks"]]
         embeddings = embedding_service.embed_texts(texts)
 
-        # Build metadata for vector store
         vector_metadata = [
             {
                 "document_id": document.id,
-                "chunk_id": None,  # Will be updated after commit
                 "chunk_index": c["chunk_index"],
                 "page_number": c["page_number"],
                 "source": file.filename,
@@ -119,15 +125,15 @@ def upload_document(collection_id):
             }
             for c in result["chunks"]
         ]
-
-        # Add to FAISS vector store
         vector_store = VectorStore()
         vector_store.add_vectors(
             collection_id=collection_id,
+            chunk_ids= chunk_ids,
             embeddings=embeddings,
-            metadata_list=vector_metadata,
-            dimension=embedding_service.dimension,
+            metadata_list = vector_metadata
         )
+
+
 
         # Add to BM25 index
         bm25_index = BM25Index()
