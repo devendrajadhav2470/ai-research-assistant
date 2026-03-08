@@ -126,8 +126,9 @@ class VectorStore:
             logger.error(f"collection {collection_id} does not exist in db") 
             return 
 
-        if self.chroma_collection.name == self._get_collection_name(collection_id):
-            self.chroma_collection = None
+        if(self.chroma_collection):
+            if self.chroma_collection.name == self._get_collection_name(collection_id):
+                self.chroma_collection = None
 
         logger.info(f"Deleted collection {collection_id}")
 
