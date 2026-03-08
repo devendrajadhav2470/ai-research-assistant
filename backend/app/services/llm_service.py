@@ -76,6 +76,15 @@ class LLMService:
                     temperature=temperature,
                     streaming=True,
                 )
+            elif provider == "google":
+                from langchain_google_genai import ChatGoogleGenerativeAI
+
+                self._clients[cache_key] = ChatGoogleGenerativeAI(
+                    model=model_name,
+                    api_key=Config.GEMINI_API_KEY,
+                    temperature=temperature,
+                    streaming=True,
+                )
             else:
                 raise ValueError(f"Unsupported LLM provider: {provider}")
 
