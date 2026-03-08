@@ -7,7 +7,8 @@ from readability import Document as ReadabilityDocument
 from docx import Document as DocxDocument
 from pypdf import PdfReader
 from langchain_experimental.text_splitter import SemanticChunker
-from langchain_huggingface import HuggingFaceEmbeddings 
+from embedding_service import EmbeddingService
+
 from bs4 import BeautifulSoup
 import io
 from PIL import Image
@@ -57,7 +58,8 @@ class DocumentProcessor:
         self.chunk_size = chunk_size or Config.CHUNK_SIZE
         self.chunk_overlap = chunk_overlap or Config.CHUNK_OVERLAP
 
-        self.embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+        embedding_service = EmbeddingService()
+        self.embeddings = embedding_service.get_embedding_model()
 
         self.chunker = SemanticChunker(
             embeddings=self.embeddings,

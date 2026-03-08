@@ -4,8 +4,7 @@ import logging
 from typing import List
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
-
+from langchain_huggingface import HuggingFaceEmbeddings
 from app.config import Config
 
 logger = logging.getLogger(__name__)
@@ -27,12 +26,19 @@ class EmbeddingService:
         if self._model is None:
             self.model_name = model_name or Config.EMBEDDING_MODEL_NAME
             logger.info(f"Loading embedding model: {self.model_name}")
-            self._model = SentenceTransformer(self.model_name)
-            self.dimension = self._model.get_sentence_embedding_dimension()
+            self._model = HuggingFaceEmbeddings(
+                model_name=self.model_name,
+                encode_kwargs={"normalize_embeddings": True}
+            )
+            # temporarily hardcoded
+            self.dimension = 768
             logger.info(
                 f"Embedding model loaded. Dimension: {self.dimension}"
             )
 
+    def get_embedding_model(self):
+        return self._model
+        
     def embed_texts(self, texts: List[str]) -> np.ndarray:
         """
         Generate embeddings for a list of texts.
@@ -46,11 +52,8 @@ class EmbeddingService:
         if not texts:
             return np.array([])
 
-        embeddings = self._model.encode(
-            texts,
-            show_progress_bar=False,
-            normalize_embeddings=True,
-            convert_to_numpy=True,
+        embeddings = self._model.embed_documents(
+            texts
         )
         return embeddings.astype(np.float32)
 
@@ -61,11 +64,8 @@ class EmbeddingService:
         Returns:
             numpy array of shape (dimension,).
         """
-        embedding = self._model.encode(
-            [query],
-            show_progress_bar=False,
-            normalize_embeddings=True,
-            convert_to_numpy=True,
+        embedding = self._model.embed_query(
+            query
         )
-        return embedding[0].astype(np.float32)
+        return embedding.astype(np.float32)
 
