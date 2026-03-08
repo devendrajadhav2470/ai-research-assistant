@@ -6,9 +6,8 @@ import json
 from typing import List, Dict, Any, Optional, Tuple
 from flask import current_app
 
-import faiss
-import numpy as np 
 from app.config import Config
+import numpy as np 
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +19,6 @@ class VectorStore:
 
         self.chroma_client = current_app.extensions["chroma_client"]
         self.chroma_collection = None 
-
-
-        self._indices: Dict[int, faiss.Index] = {}
-        self._metadata: Dict[int, List[Dict[str, Any]]] = {}
 
     def _get_collection_name(self, collection_id: int):
         #temporary method for backwards compatibility 
@@ -110,14 +105,10 @@ class VectorStore:
             logger.error(f"there was an error getting collection {collection_id} from chroma db")
             return
 
-        # Reshape query for FAISS
-        # query = query_embedding.reshape(1, -1).astype(np.float32)
-        # actual_k = min(top_k, index.ntotal)
         query_results = collection.query(
             query_embeddings = [query_embedding],
             n_results = top_k
         )
-        # scores, indices = index.search(query, actual_k)
 
         results = []
         for i in range(len(query_results['ids'][0])):
