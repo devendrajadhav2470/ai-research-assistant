@@ -3,9 +3,11 @@
 from flask import Blueprint, request, jsonify
 
 from app.extensions import db
+import logging
 from app.models.document import Collection
 from app.services.vector_store import VectorStore
 from app.services.bm25_index import BM25Index
+logger = logging.getLogger(__name__)
 
 collections_bp = Blueprint("collections", __name__)
 
@@ -21,6 +23,7 @@ def list_collections():
 def create_collection():
     """Create a new collection."""
     data = request.get_json()
+    vector_store = VectorStore()
     if not data or not data.get("name"):
         return jsonify({"error": "Name is required"}), 400
 
@@ -28,6 +31,12 @@ def create_collection():
         name=data["name"],
         description=data.get("description", ""),
     )
+    # try:
+    #     vector_store._create_or_load_collection(name=data["name"])
+    # except Exception as e:
+    #     logger.error(f"there was an error creating collection{e}")
+    #     return jsonify({"error": e})
+
     db.session.add(collection)
     db.session.commit()
 
