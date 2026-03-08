@@ -218,13 +218,19 @@ class RAGPipeline:
         if conversation_id:
             history = self.chat_service.get_chat_history(conversation_id)
             messages.extend(history)
+        
+        # Add current question if not already present in the chat history 
 
-        # Add current question
-        messages.append({
-            "role": "user",
-            "content": RAG_USER_PROMPT_TEMPLATE.format(question=question),
-        })
+        if messages[-1].role == "user" and messages[-1].content == question:
+            # this means the user message exists in the chat_history, I only need to change its format
+            messages[-1].content = RAG_USER_PROMPT_TEMPLATE.format(question=question)
 
+        else:
+            messages.append({
+                "role": "user",
+                "content": RAG_USER_PROMPT_TEMPLATE.format(question=question)
+            })
+            
         return messages
 
     def _format_context(self, chunks: List[Dict[str, Any]]) -> str:
