@@ -32,7 +32,7 @@ class VectorStore:
                 name=self._get_collection_name(collection_id),
                 get_or_create=True
             )
-            print(f"collection {self._get_collection_name(collection_id)} created in chromadb")
+            logger.info(f"collection {self._get_collection_name(collection_id)} created in chromadb")
             logger.info(
                 f"Loaded ChromDB collection {self._get_collection_name(collection_id)}"
             )
@@ -98,7 +98,7 @@ class VectorStore:
         Returns:
             List of (metadata, score) tuples sorted by similarity.
         """
-        print(f"trying to get collection {self._get_collection_name(collection_id)} from chromadb")
+        logger.info(f"trying to get collection {self._get_collection_name(collection_id)} from chromadb")
         try:
             collection = self.chroma_client.get_collection(name= self._get_collection_name(collection_id))
         except Exception as e:
