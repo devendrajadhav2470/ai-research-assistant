@@ -121,14 +121,16 @@ def query():
         return jsonify({"error": "Request body is required"}), 400
 
     question = data.get("question", "").strip()
+
+    if not question:
+        return jsonify({"error": "Question is required"}), 400
+
     question = re.sub(r"\s+", " ", question)
 
     if(len(question) > Config.MAX_QUESTION_LENGTH):
         return jsonify({"error": "Question too long (Max length: 500 chars)"}), 400
     collection_id = data.get("collection_id")
 
-    if not question:
-        return jsonify({"error": "Question is required"}), 400
     if not collection_id:
         return jsonify({"error": "collection_id is required"}), 400
 
@@ -205,10 +207,17 @@ def query_stream():
         return jsonify({"error": "Request body is required"}), 400
 
     question = data.get("question", "").strip()
-    collection_id = data.get("collection_id")
 
     if not question:
         return jsonify({"error": "Question is required"}), 400
+
+    question = re.sub(r"\s+", " ", question)
+
+    if(len(question) > Config.MAX_QUESTION_LENGTH):
+        return jsonify({"error": "Question too long (Max length: 500 chars)"}), 400
+
+    collection_id = data.get("collection_id")
+
     if not collection_id:
         return jsonify({"error": "collection_id is required"}), 400
 
