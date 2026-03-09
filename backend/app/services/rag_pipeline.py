@@ -221,7 +221,7 @@ class RAGPipeline:
         
         # Add current question if not already present in the chat history 
 
-        if messages[-1].role == "user" and messages[-1].content == question:
+        if messages[-1]["role"] == "user" and messages[-1]["content"] == question:
             # this means the user message exists in the chat_history, I only need to change its format
             messages[-1].content = RAG_USER_PROMPT_TEMPLATE.format(question=question)
 
