@@ -29,7 +29,7 @@ class BM25Index:
     """Manages BM25 keyword indices per collection with disk persistence."""
 
     def __init__(self, index_dir: str = None):
-        self.index_dir = index_dir or Config.FAISS_INDEX_DIR
+        self.index_dir = index_dir or Config.BM25_INDEX_DIR
         os.makedirs(self.index_dir, exist_ok=True)
         self._indices: Dict[int, BM25Okapi] = {}
         self._metadata: Dict[int, List[Dict[str, Any]]] = {}
@@ -182,4 +182,4 @@ class BM25Index:
         logger.info(
             f"Removed document {document_id} from BM25 index for collection {collection_id}"
         )
-
+ 
