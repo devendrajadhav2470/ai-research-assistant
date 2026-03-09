@@ -6,6 +6,7 @@ from app.config import Config
 from app.extensions import db, cors
 import chromadb
 import logging 
+import torch
 
 def create_app(config_class=Config):
     """Create and configure the Flask application."""
@@ -27,6 +28,10 @@ def create_app(config_class=Config):
     # Initialize chroma db client 
     app.extensions['chroma_client'] = chromadb.PersistentClient(path="./chroma_data") 
 
+    if torch.cuda.is_available():
+        app.extensions['device'] = "cuda"
+    else:
+        app.extensions['device'] = 'cpu'
     # Register blueprints
     from app.api.documents import documents_bp
     from app.api.collections import collections_bp

@@ -5,7 +5,7 @@ from typing import List, Dict, Any, Tuple
 
 
 from sentence_transformers import CrossEncoder
-
+from flask import current_app
 from app.config import Config
 from app.services.embedding_service import EmbeddingService
 from app.services.vector_store import VectorStore
@@ -41,7 +41,7 @@ class HybridRetriever:
         """Lazy-load the cross-encoder reranker model (singleton)."""
         if cls._reranker is None:
             logger.info(f"Loading reranker model: {Config.RERANKER_MODEL_NAME}")
-            cls._reranker = CrossEncoder(Config.RERANKER_MODEL_NAME)
+            cls._reranker = CrossEncoder(Config.RERANKER_MODEL_NAME, device=current_app.extensions["device"])
             logger.info("Reranker model loaded.")
         return cls._reranker
 
