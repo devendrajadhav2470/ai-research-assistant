@@ -18,23 +18,26 @@ class EmbeddingService:
 
     def __new__(cls, *args, **kwargs):
         """Singleton to avoid loading the model multiple times."""
+        logger.info(f"someone asked for a EmeddingService instance")
         if cls._instance is None:
             cls._instance = super().__new__(cls)
+            logger.info(f"EmbeddingService object created")
         return cls._instance
 
     def __init__(self, model_name: str = None):
         if self._model is None:
             self.model_name = model_name or Config.EMBEDDING_MODEL_NAME
-            logger.info(f"Loading embedding model: {self.model_name}")
+            logger.info(f"loading the HuggingFaceEmbeddings model: {self.model_name} with normalize_embeddings set to True")
             self._model = HuggingFaceEmbeddings(
                 model_name=self.model_name,
                 encode_kwargs={"normalize_embeddings": True}
             )
+            if self._model:
+                logger.info(f"successfully loaded the model")
+            else:
+                logger.info(f"there was some error loading the HuggingFace model")
             # temporarily hardcoded
             self.dimension = 768
-            logger.info(
-                f"Embedding model loaded. Dimension: {self.dimension}"
-            )
 
     def get_embedding_model(self):
         return self._model
@@ -55,6 +58,10 @@ class EmbeddingService:
         embeddings = self._model.embed_documents(
             texts
         )
+
+        logger.info(f"embedding service has generated {len(embeddings)} embeddings each of length {len(embeddings[0])}")
+        logger.info(f"first 5 values of the first embedding: {embeddings[0][:5]}")
+
         return np.array(embeddings).astype(np.float32)
 
     def embed_query(self, query: str) -> np.ndarray:
@@ -67,5 +74,8 @@ class EmbeddingService:
         embedding = self._model.embed_query(
             query
         )
+
+        logger.info(f"embedding service has generated embedding for the query {str}")
+        logger.info(f"first 5 values of the embedding: {embedding[:5]}")
         return np.array(embedding).astype(np.float32)
 

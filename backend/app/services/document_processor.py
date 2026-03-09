@@ -39,11 +39,14 @@ def ocr_entire_page(pdf_path: str, page_number_0based: int) -> str:
 
     extracted_text = ""
 
+    logger.info(f"OCR done on pdf: {pdf_path} of the page_number: {page_number_0based}")
+
     try:
         extracted_text = pytesseract.image_to_string(img, lang="eng", config=config)
     except Exception as e:
         logger.error(f"there was an error extracting text from pdf image using pytesseract: {e}")
     
+    logger.info(f"Text Extracted from pdf page: {extracted_text}")
     return extracted_text
     
 
