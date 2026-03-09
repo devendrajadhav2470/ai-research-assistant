@@ -22,8 +22,8 @@ class Config:
     UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "./data/uploads")
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50 MB max upload
     MAX_QUESTION_LENGTH = 500 #500 characters
-    # FAISS
-    FAISS_INDEX_DIR = os.getenv("FAISS_INDEX_DIR", "./data/faiss_indices")
+    # BM25
+    BM25_INDEX_DIR = os.getenv("BM25_INDEX_DIR", "./data/bm25_indices")
 
     # Embedding model
     EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "BAAI/bge-base-en-v1.5")
