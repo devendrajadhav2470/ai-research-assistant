@@ -7,7 +7,7 @@ from readability import Document as ReadabilityDocument  # pyright: ignore[repor
 from docx import Document as DocxDocument
 from pypdf import PdfReader
 from langchain_experimental.text_splitter import SemanticChunker
-from embedding_service import EmbeddingService
+from app.services.embedding_service import EmbeddingService
 
 from bs4 import BeautifulSoup
 import io
