@@ -5,12 +5,18 @@ from flask import Flask
 from app.config import Config
 from app.extensions import db, cors
 import chromadb
+import logging 
 
 def create_app(config_class=Config):
     """Create and configure the Flask application."""
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    #Configure Logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    )
     # Ensure data directories exist
     os.makedirs(os.path.dirname(os.path.abspath(app.config["SQLITE_DB_PATH"])), exist_ok=True)
 
