@@ -6,7 +6,7 @@ from typing import List
 import numpy as np
 from langchain_huggingface import HuggingFaceEmbeddings
 from app.config import Config
-from flask import app
+from flask import current_app
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class EmbeddingService:
             logger.info(f"loading the HuggingFaceEmbeddings model: {self.model_name} with normalize_embeddings set to True")
             self._model = HuggingFaceEmbeddings(
                 model_name=self.model_name,
-                encode_kwargs={"normalize_embeddings": True,"device": app.extensions["device"]}
+                encode_kwargs={"normalize_embeddings": True,"device": current_app.extensions["device"]}
             )
             if self._model:
                 logger.info(f"successfully loaded the model")

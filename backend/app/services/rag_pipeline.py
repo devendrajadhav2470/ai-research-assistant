@@ -245,6 +245,7 @@ class RAGPipeline:
                 "content": RAG_USER_PROMPT_TEMPLATE.format(question=question)
             })
             
+        print(messages)
         return messages
 
     def _format_context(self, chunks: List[Dict[str, Any]]) -> str:

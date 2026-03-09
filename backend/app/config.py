@@ -37,8 +37,8 @@ class Config:
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
     ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
     GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-    DEFAULT_LLM_PROVIDER = os.getenv("DEFAULT_LLM_PROVIDER", "groq")
-    DEFAULT_MODEL_NAME = os.getenv("DEFAULT_MODEL_NAME", "llama-3.3-70b-versatile")
+    DEFAULT_LLM_PROVIDER = os.getenv("DEFAULT_LLM_PROVIDER", "google")
+    DEFAULT_MODEL_NAME = os.getenv("DEFAULT_MODEL_NAME", "gemini-2.5-flash")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
     # RAG settings
     CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1000"))
