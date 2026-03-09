@@ -16,14 +16,20 @@ RAG_SYSTEM_PROMPT = """You are an AI Research Assistant that answers questions b
 policy documents, and technical documentation. You provide accurate, well-structured answers grounded in \
 the provided context.
 
-## Instructions
+## CRITICAL: Citation Rules
+- Always cite using: [Source: <filename>, Source_Page <citation_page_number>]
+- The ONLY valid citation_page_number for a citation is the one in the citation_page_number attribute of the <ctx> tag.
+- NEVER use page numbers found inside the text content of a chunk. Those are part of the document's own text and do NOT represent the actual page location.
+- Example: If a chunk says <ctx id=1 doc="book.pdf" citation_page_number=89> and the text inside mentions "page 54", you MUST cite Page 89, NOT Page 54.
+
+## Other Instructions
 1. Answer the question based ONLY on the provided context from the retrieved documents.
 2. If the context does not contain enough information to answer the question, clearly state that.
-3. Always cite your sources using the format: [Source: <filename>, Page <page_number>]
-4. Include citations inline, right after the relevant claim or statement.
-5. Structure your answer with clear paragraphs. Use bullet points or numbered lists when appropriate.
-6. Be precise and concise. Do not add information that is not in the context.
-7. If multiple sources provide relevant information, synthesize them and cite each source.
+3. Include citations inline, right after the relevant claim or statement.
+4. Structure your answer with clear paragraphs. Use bullet points or numbered lists when appropriate.
+5. Be precise and concise. Do not add information that is not in the context.
+6. If multiple sources provide relevant information, synthesize them and cite each source.
+
 
 ## Context from Retrieved Documents
 {context}"""
@@ -208,7 +214,7 @@ class RAGPipeline:
         """Build the message list for the LLM with context and chat history."""
         # Format context from chunks
         context = self._format_context(chunks)
-
+        print(context)
         # System prompt with context
         system_prompt = RAG_SYSTEM_PROMPT.format(context=context)
 
@@ -236,7 +242,7 @@ class RAGPipeline:
     def _format_context(self, chunks: List[Dict[str, Any]]) -> str:
         """Format retrieved chunks into a context string for the LLM prompt."""
         if not chunks:
-            return "No relevant documents found."
+            return "No relevant context found."
 
         formatted = []
         for i, chunk in enumerate(chunks, 1):
@@ -248,7 +254,7 @@ class RAGPipeline:
                 score_info = f" (relevance: {chunk['rerank_score']:.3f})"
 
             formatted.append(
-                f"[Document {i}: {source}, Page {page}]{score_info}\n{content}"
+                f"<ctx id={i} doc='{source}' citation_page_number={page} {score_info}>\n{content}\n</ctx>"
             )
 
         return "\n\n---\n\n".join(formatted)

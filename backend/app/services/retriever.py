@@ -79,9 +79,8 @@ class HybridRetriever:
         )
 
         if not vector_results:
-            logger.error(f"there was an error retrieving vectors from vector_store")
-            return []
-
+            logger.info(f"no vectors found in vector_store for the query")
+            
         # Step 2: BM25 keyword search
         bm25_results = self.bm25_index.search(
             collection_id=collection_id,
@@ -175,7 +174,7 @@ class HybridRetriever:
         """
         if not chunks:
             return []
-
+ 
         reranker = self._get_reranker()
         contents = [chunk.get("content", "") for chunk in chunks]
 
