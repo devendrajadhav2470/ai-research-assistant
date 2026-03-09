@@ -55,7 +55,7 @@ class EmbeddingService:
         embeddings = self._model.embed_documents(
             texts
         )
-        return embeddings.astype(np.float32)
+        return np.array(embeddings).astype(np.float32)
 
     def embed_query(self, query: str) -> np.ndarray:
         """
@@ -67,5 +67,5 @@ class EmbeddingService:
         embedding = self._model.embed_query(
             query
         )
-        return embedding.astype(np.float32)
+        return np.array(embedding).astype(np.float32)
 
