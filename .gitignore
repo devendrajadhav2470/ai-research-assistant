@@ -11,10 +11,11 @@ build/
 venv/
 env/
 .venv/
-
+venv312/
 # Environment
 .env
-
+tempfolder/
+chroma_data/
 # Data
 data/
 *.db
@@ -38,6 +39,5 @@ frontend/dist/
 Thumbs.db
 
 # Model cache
-models/
 .cache/
 
