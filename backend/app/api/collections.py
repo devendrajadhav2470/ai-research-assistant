@@ -3,6 +3,7 @@
 from flask import Blueprint, request, jsonify
 
 from app.extensions import db
+from app.api.auth import token_required
 import logging
 from app.models.document import Collection
 from app.services.vector_store import VectorStore
@@ -13,6 +14,7 @@ collections_bp = Blueprint("collections", __name__)
 
 
 @collections_bp.route("", methods=["GET"])
+@token_required
 def list_collections():
     """List all collections."""
     collections = Collection.query.order_by(Collection.created_at.desc()).all()
@@ -20,6 +22,7 @@ def list_collections():
 
 
 @collections_bp.route("", methods=["POST"])
+@token_required
 def create_collection():
     """Create a new collection."""
     data = request.get_json()
@@ -44,6 +47,7 @@ def create_collection():
 
 
 @collections_bp.route("/<int:collection_id>", methods=["GET"])
+@token_required
 def get_collection(collection_id):
     """Get a specific collection."""
     collection = db.session.get(Collection, collection_id)
@@ -53,6 +57,7 @@ def get_collection(collection_id):
 
 
 @collections_bp.route("/<int:collection_id>", methods=["PUT"])
+@token_required
 def update_collection(collection_id):
     """Update a collection."""
     collection = db.session.get(Collection, collection_id)
@@ -70,6 +75,7 @@ def update_collection(collection_id):
 
 
 @collections_bp.route("/<int:collection_id>", methods=["DELETE"])
+@token_required
 def delete_collection(collection_id):
     """Delete a collection and all associated data."""
     collection = db.session.get(Collection, collection_id)

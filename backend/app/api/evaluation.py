@@ -8,6 +8,7 @@ from app.models.chat import Message
 from app.services.rag_pipeline import RAGPipeline
 from app.services.chat_service import ChatService
 from app.services.retriever import HybridRetriever
+from app.api.auth import token_required
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,7 @@ evaluation_bp = Blueprint("evaluation", __name__)
 
 
 @evaluation_bp.route("/evaluate/<int:message_id>", methods=["POST"])
+@token_required
 def evaluate_message(message_id):
     """
     Evaluate the quality of an assistant message.
@@ -83,6 +85,7 @@ def evaluate_message(message_id):
 
 
 @evaluation_bp.route("/message/<int:message_id>", methods=["GET"])
+@token_required
 def get_evaluation(message_id):
     """Get the evaluation results for a message."""
     message = db.session.get(Message, message_id)

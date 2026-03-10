@@ -15,6 +15,7 @@ from app.services.embedding_service import EmbeddingService
 from app.services.vector_store import VectorStore
 from app.services.bm25_index import BM25Index
 from app.config import Config
+from app.api.auth import token_required
 import json 
 
 logger = logging.getLogger(__name__)
@@ -23,6 +24,7 @@ documents_bp = Blueprint("documents", __name__)
 
 
 @documents_bp.route("/collection/<int:collection_id>", methods=["GET"])
+@token_required
 def list_documents(collection_id):
     """List all documents in a collection."""
     collection = db.session.get(Collection, collection_id)
@@ -38,6 +40,7 @@ def list_documents(collection_id):
 
 
 @documents_bp.route("/upload/<int:collection_id>", methods=["POST"])
+@token_required
 def upload_document(collection_id):
     """Upload a document to a collection and process it."""
 
@@ -165,6 +168,7 @@ def upload_document(collection_id):
 
 
 @documents_bp.route("/<int:document_id>", methods=["GET"])
+@token_required
 def get_document(document_id):
     """Get a specific document."""
     document = db.session.get(Document, document_id)
@@ -174,6 +178,7 @@ def get_document(document_id):
 
 
 @documents_bp.route("/<int:document_id>", methods=["DELETE"])
+@token_required
 def delete_document(document_id):
     """Delete a document and its chunks, embeddings."""
     document = db.session.get(Document, document_id)

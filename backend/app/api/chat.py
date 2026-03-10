@@ -11,13 +11,14 @@ from app.services.rag_pipeline import RAGPipeline
 from app.services.chat_service import ChatService
 from app.services.llm_service import LLMService
 import re
-
+from app.api.auth import token_required
 logger = logging.getLogger(__name__)
 
 chat_bp = Blueprint("chat", __name__)
 
 
 @chat_bp.route("/conversations/collection/<int:collection_id>", methods=["GET"])
+@token_required
 def list_conversations(collection_id):
     """List all conversations in a collection."""
     collection = db.session.get(Collection, collection_id)
@@ -30,6 +31,7 @@ def list_conversations(collection_id):
 
 
 @chat_bp.route("/conversations", methods=["POST"])
+@token_required
 def create_conversation():
     """Create a new conversation."""
     data = request.get_json()
@@ -49,6 +51,7 @@ def create_conversation():
 
 
 @chat_bp.route("/conversations/<int:conversation_id>", methods=["GET"])
+@token_required
 def get_conversation(conversation_id):
     """Get a conversation with its messages, supporting pagination."""
     limit = request.args.get("limit", 10, type=int)
@@ -80,6 +83,7 @@ def get_conversation(conversation_id):
 
 
 @chat_bp.route("/conversations/<int:conversation_id>", methods=["PATCH"])
+@token_required
 def update_conversation(conversation_id):
     """Update a conversation."""
     data = request.get_json()
@@ -94,6 +98,7 @@ def update_conversation(conversation_id):
     return jsonify(conversation.to_dict())
 
 @chat_bp.route("/conversations/<int:conversation_id>", methods=["DELETE"])
+@token_required
 def delete_conversation(conversation_id):
     """Delete a conversation."""
     chat_service = ChatService()
@@ -103,6 +108,7 @@ def delete_conversation(conversation_id):
 
 
 @chat_bp.route("/query", methods=["POST"])
+@token_required
 def query():
     """
     Send a query to the RAG pipeline (non-streaming).
@@ -192,6 +198,7 @@ def query():
 
 
 @chat_bp.route("/query/stream", methods=["POST"])
+@token_required
 def query_stream():
     """
     Send a query to the RAG pipeline with SSE streaming.
@@ -295,6 +302,7 @@ def query_stream():
 
 
 @chat_bp.route("/models", methods=["GET"])
+@token_required
 def list_models():
     """List available LLM models grouped by provider."""
     return jsonify(LLMService.get_available_models())

@@ -6,6 +6,7 @@ from app.services.retriever import HybridRetriever
 from app.extensions import db
 from app.models.document import Collection
 from app.config import Config
+from app.api.auth import token_required
 import re
 
 logger = logging.getLogger(__name__)
@@ -14,6 +15,7 @@ retrieval_bp = Blueprint("retrieval", __name__)
 
 
 @retrieval_bp.route("/search", methods=["POST"])
+@token_required
 def get_chunks():
     request_data = request.get_json()
     collection_id = request_data.get("collection_id")

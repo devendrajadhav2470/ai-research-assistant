@@ -4,6 +4,7 @@ import logging
 from flask import Blueprint, jsonify
 import os
 from dotenv import load_dotenv
+from app.api.auth import token_required
 logger = logging.getLogger(__name__)
 
 config_bp = Blueprint("config", __name__)
@@ -11,6 +12,7 @@ config_bp = Blueprint("config", __name__)
 load_dotenv()
 
 @config_bp.route("/defaults", methods=["GET"])
+@token_required
 def get_defaults():
 
     default_model = os.environ.get("DEFAULT_MODEL_NAME")
