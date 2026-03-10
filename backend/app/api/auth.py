@@ -1,4 +1,4 @@
-from flask import Blueprint
+from flask import Blueprint, g
 import logging
 from flask import request
 from flask import jsonify 
@@ -20,6 +20,8 @@ def token_required(f):
             payload = user_service.decode_token(token=token)
             if isinstance(payload,str):
                 return jsonify({"error": payload}), 401
+            
+            g.user = payload
         except:
             return jsonify({"error": "Invalid token"}), 401
         

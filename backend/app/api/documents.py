@@ -4,10 +4,15 @@ import os
 import logging
 import uuid
 import hashlib
+from botocore.exceptions import ClientError
+import io
 
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app,g
 from werkzeug.utils import secure_filename
+from datetime import datetime,timezone
+from werkzeug.datastructures import FileStorage
 
+from flask import current_app
 from app.extensions import db
 from app.models.document import Document, Chunk, Collection
 from app.services.document_processor import DocumentProcessor
@@ -22,6 +27,62 @@ logger = logging.getLogger(__name__)
 
 documents_bp = Blueprint("documents", __name__)
 
+
+def upload_file_to_s3(file: FileStorage,bucket: str,key: str):
+    try:
+        current_app.extensions['s3'].upload_fileobj(
+            Fileobj=file,
+            Bucket=bucket,
+            Key=key
+        )
+        logger.info("file uploaded to s3")
+    except ClientError as e:
+        logger.error(f"could not upload file to s3: {e}")
+    
+
+def create_presigned_put_url(
+    bucket: str,
+    key: str,
+    content_type: str="application/pdf",
+    expires_in: int = 3600,
+) -> str:
+    
+    try:
+        url = current_app.extensions['s3'].generate_presigned_url(
+            ClientMethod="put_object",
+            Params={
+                "Bucket": bucket,
+                "Key": key,
+                "ContentType": content_type,
+            },
+            ExpiresIn=expires_in,
+            HttpMethod="PUT",
+        )
+        return url
+    except ClientError as e:
+        raise RuntimeError(f"Failed to create a presigned put url:{e}")
+
+def create_presigned_get_url(
+    bucket: str,
+    key: str,
+    content_type: str="application/pdf",
+    expires_in: int = 3600,
+) -> str:
+    
+    try:
+        url = current_app.extensions['s3'].generate_presigned_url(
+            ClientMethod="get_object",
+            Params={
+                "Bucket": bucket,
+                "Key": key,
+                "ContentType": content_type,
+            },
+            ExpiresIn=expires_in,
+            HttpMethod="GET",
+        )
+        return url
+    except ClientError as e:
+        raise RuntimeError(f"Failed to create a presigned get url:{e}")
 
 @documents_bp.route("/collection/<int:collection_id>", methods=["GET"])
 @token_required
@@ -38,6 +99,47 @@ def list_documents(collection_id):
     )
     return jsonify([d.to_dict() for d in documents])
 
+
+@documents_bp.route("/upload_url/<int:collection_id>", methods=["POST"])
+@token_required
+def get_upload_url(collection_id):
+
+    SUPPORTED_FILE_TYPES = [".pdf"]
+
+    collection = db.session.get(Collection, collection_id)
+    if not collection:
+        return jsonify({"error": "Collection not found"}), 404
+    
+
+    if "file" not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+
+    file = request.files["file"]
+    if not file.filename:
+        return jsonify({"error": "No file selected"}), 400
+
+    if not any(file.filename.lower().endswith(ext) for ext in SUPPORTED_FILE_TYPES):
+        return jsonify({"error": f"Only {str(SUPPORTED_FILE_TYPES)} files are supported"}), 400
+
+    file.seek(0,2)
+    file_size = file.tell()
+    file.seek(0)
+
+    if file_size > Config.MAX_CONTENT_LENGTH:
+        return jsonify({"error": "File too large (max 50MB)"}), 413
+
+
+    # Sanitize filename and add UUID prefix to avoid collisions
+    ext = os.path.splitext(file.filename or "")[1].lower() or ".pdf"
+    sanitized_name = secure_filename(file.filename) or f"document{ext}"
+    safe_filename = f"{uuid.uuid4().hex[:8]}_{sanitized_name}"
+
+
+    upload_url = create_presigned_put_url(bucket = Config.S3_BUCKET, key=f"uploads/{g.user["email"]}/{safe_filename}")
+
+    return jsonify({
+        "presigned_upload_put_url": upload_url
+    })
 
 @documents_bp.route("/upload/<int:collection_id>", methods=["POST"])
 @token_required
@@ -66,18 +168,19 @@ def upload_document(collection_id):
     if file_size > Config.MAX_CONTENT_LENGTH:
         return jsonify({"error": "File too large (max 50MB)"}), 413
     # Save the file
-    upload_dir = os.path.join(Config.UPLOAD_FOLDER, str(collection_id))
-    os.makedirs(upload_dir, exist_ok=True)
-
+    upload_dir = "uploads/"+g.user["email"]+"/"+str(collection_id)+"/"+str(datetime.now(timezone.utc).date())+"/"
+    # os.makedirs(upload_dir, exist_ok=True)
+    
     # Sanitize filename and add UUID prefix to avoid collisions
     ext = os.path.splitext(file.filename or "")[1].lower() or ".pdf"
     sanitized_name = secure_filename(file.filename) or f"document{ext}"
     safe_filename = f"{uuid.uuid4().hex[:8]}_{sanitized_name}"
+    
     file_path = os.path.join(upload_dir, safe_filename)
-    file.save(file_path)
+    
+    temp_file_obj = FileStorage(stream=io.BytesIO(file.read()), filename=file.filename, content_type=file.content_type)
 
-    file_size = os.path.getsize(file_path)
-
+    upload_file_to_s3(temp_file_obj,bucket=Config.S3_BUCKET,key=file_path)
     # Create document record
     document = Document(
         collection_id=collection_id,
@@ -92,7 +195,7 @@ def upload_document(collection_id):
     # Process the document
     try:
         processor = DocumentProcessor()
-        result = processor.process_document(file_path, file.filename)
+        result = processor.process_document(file, file.filename)
 
         # Save chunks to database
         chunk_models = []

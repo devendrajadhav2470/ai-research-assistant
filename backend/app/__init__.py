@@ -1,6 +1,7 @@
 """Flask application factory."""
 
 import os
+import boto3
 from flask import Flask
 from app.config import Config
 from app.extensions import db, cors
@@ -27,6 +28,8 @@ def create_app(config_class=Config):
 
     # Initialize chroma db client 
     app.extensions['chroma_client'] = chromadb.PersistentClient(path="./chroma_data") 
+
+    app.extensions['s3'] = boto3.client("s3")
 
     if torch.cuda.is_available():
         app.extensions['device'] = "cuda"

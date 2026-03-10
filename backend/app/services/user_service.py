@@ -46,13 +46,13 @@ class UserService():
             return jwt.decode(token,secret_key,algorithms=["HS256"])
         except jwt.ExpiredSignatureError:
             logger.error(f"Token has expired")
-            return 
+            return "Token has expired"
         except jwt.InvalidTokenError:
             logger.error(f"Token is Invalid")
-            return 
+            return "Token is Invalied"
         except Exception as e:
             logger.error(f"{e}")
-            return
+            return "Unknown Exection while decoding token"
     def verify_user_pwd(self, password: str,user_id: str=None,email: str=None):
         if not user_id and not email:
             logger.info(f"user id or email are required to verify the password")

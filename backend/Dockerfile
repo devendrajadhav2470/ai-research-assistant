@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ RUN python -c "import nltk; nltk.download('punkt_tab', quiet=True)"
 COPY . .
 
 # Create data directories
-RUN mkdir -p data/uploads data/faiss_indices
+RUN mkdir -p data/uploads 
 
 EXPOSE 5000
 

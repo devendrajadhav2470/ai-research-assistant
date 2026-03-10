@@ -2,6 +2,7 @@
 
 import os
 from dotenv import load_dotenv
+from sqlalchemy.util import osx
 
 load_dotenv()
 
@@ -46,10 +47,12 @@ class Config:
     TOP_K_RETRIEVAL = int(os.getenv("TOP_K_RETRIEVAL", "20"))
     TOP_K_RERANK = int(os.getenv("TOP_K_RERANK", "5"))
     CHAT_HISTORY_WINDOW = int(os.getenv("CHAT_HISTORY_WINDOW", "10"))
-
+    
     # Observability (Langfuse)
     LANGFUSE_PUBLIC_KEY = os.getenv("LANGFUSE_PUBLIC_KEY", "")
     LANGFUSE_SECRET_KEY = os.getenv("LANGFUSE_SECRET_KEY", "")
     LANGFUSE_HOST = os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
 
     TESSERACT_EXE_PATH = os.getenv("TESSERACT_EXE_PATH","")
+
+    S3_BUCKET = os.getenv("S3_BUCKET","amzn-s3-bookrag-bucket")
