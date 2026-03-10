@@ -23,7 +23,7 @@ def create_app(config_class=Config):
 
     # Initialize extensions
     db.init_app(app)
-    cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
+    cors.init_app(app, resources={r"/api/*": {"origins": ["http://localhost:3000","http://devendrajadhav.space"]}})
 
     # Initialize chroma db client 
     app.extensions['chroma_client'] = chromadb.PersistentClient(path="./chroma_data") 
