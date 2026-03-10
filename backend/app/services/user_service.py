@@ -1,4 +1,4 @@
-from app.models import User
+from app.models.user import User
 from app.extensions import db
 import bcrypt 
 import uuid 
@@ -12,7 +12,7 @@ class UserService():
         user = User(
             id = uuid.uuid4().hex[:10],
             email=email,
-            password_hash=bcrypt.hashpw(password.encode("utf-8"),bcrypt.gesalt())
+            password_hash=bcrypt.hashpw(password.encode("utf-8"),bcrypt.gensalt())
         )
         try:
             db.session.add(user)
@@ -27,7 +27,8 @@ class UserService():
         return user
     
     def get_user_from_email(self, email: str):
-        user = db.session.get(User,email=email)
+        query = User.query.filter_by(email=email)
+        [user]  = query.all()
         if not user:
             logger.info(f"no user found for email={email}")
         return user
@@ -36,7 +37,7 @@ class UserService():
         # TO DO: replace with env variable
         secret_key = "temporary_secret_key"
         payload['exp'] = datetime.now(timezone.utc) + timedelta(hours= 1)
-        return jwt.encode(payload, secret_key,algorithms="HS256")
+        return jwt.encode(payload, secret_key,algorithm="HS256")
     def decode_token(self,token):
         # TO DO: r
         # eplace with env variable
