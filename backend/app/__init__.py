@@ -39,13 +39,14 @@ def create_app(config_class=Config):
     from app.api.evaluation import evaluation_bp
     from app.api.config import config_bp
     from app.api.retrieval import retrieval_bp
-    
+    from app.api.auth import auth_bp
     app.register_blueprint(documents_bp, url_prefix="/api/documents")
     app.register_blueprint(collections_bp, url_prefix="/api/collections")
     app.register_blueprint(chat_bp, url_prefix="/api/chat")
     app.register_blueprint(evaluation_bp, url_prefix="/api/evaluation")
     app.register_blueprint(config_bp, url_prefix="/api/config")
     app.register_blueprint(retrieval_bp,url_prefix="/api/retrieval")
+    app.register_blueprint(auth_bp,url_prefix="/api/auth")
     # Create database tables
     with app.app_context():
         from app.models.document import Collection, Document, Chunk  # noqa: F401
