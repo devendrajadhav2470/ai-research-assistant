@@ -1,10 +1,11 @@
 """Collection CRUD API endpoints."""
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify,g
 
 from app.extensions import db
 from app.api.auth import token_required
 import logging
+
 from app.models.document import Collection
 from app.services.vector_store import VectorStore
 from app.services.bm25_index import BM25Index
@@ -33,6 +34,7 @@ def create_collection():
     collection = Collection(
         name=data["name"],
         description=data.get("description", ""),
+        user_id=g.user["id"]
     )
     # try:
     #     vector_store._create_or_load_collection(name=data["name"])

@@ -71,11 +71,12 @@ def login_user():
         return jsonify({"error": "you must provide email and password for logging in"}), 401
 
     user_service = UserService()
-
-    if user_service.verify_user_pwd(password = password,email=email):
+    user_id = user_service.verify_user_pwd(password = password,email=email);
+    if user_id:
         # create jwt tokens 
         token = user_service.create_token(payload = {
-            "email": email
+            "email": email,
+            "id": user_id
         })
         return jsonify({"token": token})
     

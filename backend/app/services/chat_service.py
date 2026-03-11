@@ -6,6 +6,7 @@ import datetime
 from app.extensions import db
 from app.models.chat import Conversation, Message
 from app.config import Config
+from flask import g
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ class ChatService:
         conversation = Conversation(
             collection_id=collection_id,
             title=title,
+            user_id=g.user["id"]
         )
         db.session.add(conversation)
         db.session.commit() 
