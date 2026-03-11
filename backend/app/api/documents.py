@@ -6,6 +6,7 @@ import uuid
 import hashlib
 from botocore.exceptions import ClientError
 import io
+import nltk 
 
 from flask import Blueprint, request, jsonify, current_app,g
 from werkzeug.utils import secure_filename
@@ -22,11 +23,22 @@ from app.services.bm25_index import BM25Index
 from app.config import Config
 from app.api.auth import token_required
 import json 
+from typing import List
 
 logger = logging.getLogger(__name__)
 
 documents_bp = Blueprint("documents", __name__)
 
+# Ensure NLTK punkt tokenizer is available
+try:
+    nltk.data.find("tokenizers/punkt_tab")
+except LookupError:
+    nltk.download("punkt_tab", quiet=True)
+
+
+def tokenize(text: str) -> List[str]:
+    """Simple tokenization: lowercase and split into words."""
+    return nltk.word_tokenize(text.lower())
 
 def upload_file_to_s3(file: FileStorage,bucket: str,key: str):
     try:
@@ -204,14 +216,17 @@ def upload_document(collection_id):
 
             raw_chunk_id =f"{chunk_data["metadata"]["source"]}::{chunk_data["chunk_index"]}::{chunk_data["content"]}".encode("utf-8")
             chunk_id =  hashlib.sha256(raw_chunk_id).hexdigest()
+            chunk_tokens = tokenize(chunk_data["content"])
             chunk_ids.append(chunk_id)
             chunk = Chunk(
                 document_id=document.id,
+                collection_id=document.collection_id,
                 id = chunk_id,
                 content=chunk_data["content"],
                 page_number=chunk_data["page_number"],
                 chunk_index=chunk_data["chunk_index"],
                 metadata_json=json.dumps(chunk_data["metadata"]),
+                chunk_tokens=chunk_tokens
             )
             chunk_models.append(chunk)
             db.session.add(chunk)
@@ -244,9 +259,7 @@ def upload_document(collection_id):
         # Add to BM25 index
         bm25_index = BM25Index()
         bm25_index.add_documents(
-            collection_id=collection_id,
-            texts=texts,
-            metadata_list=vector_metadata,
+            collection_id=collection_id
         )
 
         # Update document record
