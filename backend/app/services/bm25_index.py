@@ -4,7 +4,6 @@ import json
 import logging
 from typing import List, Dict, Any, Tuple
 from app.extensions import db
-
 import nltk
 from rank_bm25 import BM25Okapi
 from app.models.document import Collection, Chunk
@@ -27,6 +26,8 @@ def tokenize(text: str) -> List[str]:
 class BM25Index:
     """Manages BM25 keyword indices per collection with disk persistence."""
 
+    _instance = None
+
     def __new__(cls, *args, **kwargs):
         """Singleton"""
         logger.info(f"someone asked for a BM25 instance")
@@ -48,7 +49,7 @@ class BM25Index:
             metadata_list = []
             token_list = []
             for chunk in chunks:
-                metadata_list.append(json.load(chunk.metadata_json))
+                metadata_list.append(json.loads(chunk.metadata_json))
                 token_list.append(chunk.chunk_tokens)
 
             self._metadata[collection_id] = metadata_list
