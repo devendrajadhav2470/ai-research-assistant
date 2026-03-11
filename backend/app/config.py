@@ -15,8 +15,7 @@ class Config:
     DEBUG = os.getenv("FLASK_DEBUG", "0") == "1"
 
     # Database
-    SQLITE_DB_PATH = os.getenv("SQLITE_DB_PATH", "./data/app.db")
-    SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.abspath(SQLITE_DB_PATH)}"
+    SQLALCHEMY_DATABASE_URI = f"postgresql://postgres:{os.getenv("POSTGRES_PASSWORD")}@localhost/bookragdb"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # File uploads

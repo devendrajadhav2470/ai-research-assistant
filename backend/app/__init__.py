@@ -19,8 +19,6 @@ def create_app(config_class=Config):
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     )
-    # Ensure data directories exist
-    os.makedirs(os.path.dirname(os.path.abspath(app.config["SQLITE_DB_PATH"])), exist_ok=True)
 
     # Initialize extensions
     db.init_app(app)
