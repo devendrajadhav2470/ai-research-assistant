@@ -12,7 +12,7 @@ class UserService():
         user = User(
             id = uuid.uuid4().hex[:10],
             email=email,
-            password_hash=bcrypt.hashpw(password.encode("utf-8"),bcrypt.gensalt())
+            password_hash=bcrypt.hashpw(password.encode("utf-8"),bcrypt.gensalt()).decode("utf-8")
         )
         try:
             db.session.add(user)
@@ -69,10 +69,10 @@ class UserService():
             logger.info(f"no user found")
             return
 
-        if bcrypt.checkpw(password.encode("utf-8"),user.password_hash):
+        if bcrypt.checkpw(password.encode("utf-8"),user.password_hash.encode("utf-8")):
             logger.info(f"password verified")
-            return True
-        return False
+            return user.id
+        return
 
 
 
