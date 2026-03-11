@@ -15,7 +15,7 @@ class Config:
     DEBUG = os.getenv("FLASK_DEBUG", "0") == "1"
 
     # Database
-    SQLALCHEMY_DATABASE_URI = f"postgresql://postgres:{os.getenv("POSTGRES_PASSWORD")}@localhost/bookragdb"
+    SQLALCHEMY_DATABASE_URI = f"postgresql://postgres:{os.getenv("POSTGRES_PASSWORD")}@{os.getenv("POSTGRES_ADDRESS")}/bookragdb"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # File uploads
