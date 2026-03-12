@@ -13,10 +13,25 @@ def token_required(f):
     @wraps(f)
     def decorator(*args, **kwargs):
         token = request.headers.get('Authorization')
-        if not token:
-            return jsonify({"error": "Authentication token is required"}), 401
+        guest_user_session_id = request.headers.get('GuestUserSessionId')
+        # optionally validate the session id to check if its a valid session id or not
+        logger.info(f"guest_user_session_id: {guest_user_session_id}")
+        if not token and not guest_user_session_id:
+            logger.info(f"no session id and no token")
+            return jsonify({"error": "Authentication token or Session Id is required"}), 401
+
+        user_service = UserService()
+
+        if guest_user_session_id:
+            guest_user = user_service.get_guest_user(guest_user_session_id)
+            g.user = {
+                "email": guest_user.email,
+                "exp": "temporary",
+                "id": guest_user.id
+            }
+            return f(*args,**kwargs)
+    
         try:
-            user_service = UserService()
             payload = user_service.decode_token(token=token)
             if isinstance(payload,str):
                 return jsonify({"error": payload}), 401

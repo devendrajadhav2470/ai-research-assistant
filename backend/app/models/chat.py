@@ -15,7 +15,7 @@ class Conversation(db.Model):
         db.Integer, db.ForeignKey("collections.id"), nullable=False
     )
     user_id = db.Column(
-        db.String(30), db.ForeignKey("users.id"), nullable=False
+        db.String(40), db.ForeignKey("users.id"), nullable=False
     )
     title = db.Column(db.String(255), default="New Conversation")
     created_at = db.Column(

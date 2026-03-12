@@ -45,3 +45,4 @@ python-dotenv==1.0.1
 nltk>=3.9.1
 psycopg2-binary
 boto3
+pytest

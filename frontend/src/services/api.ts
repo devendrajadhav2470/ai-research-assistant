@@ -2,6 +2,7 @@
  * API client for the AI Research Assistant backend.
  */
 import axios from 'axios';
+
 import type {
   Collection,
   Document,
@@ -12,15 +13,55 @@ import type {
   Evaluation,
   BackendStatus,
 } from '../types';
+// import meta.env
 
 const API_BASE = '/api';
+// dotenv.config({path: '../.env'})
+
+function getCookie(name: string): string | null{
+  const cookies = document.cookie.split(";");
+  console.log(`cookies: ${cookies}`)
+  for(const cookie of cookies){
+    const [key,value] = cookie.split("=")
+    const trimmed_key = key.trim()
+    if(trimmed_key === name){
+      console.log("yes")
+      return decodeURIComponent(value);
+    }
+  }
+  return null;
+}
+
+
+function setCookie(name: string,value: string,days: number): void{
+  const date = new Date();
+  date.setTime(date.getTime()+ days*24*60*60*1000);
+
+  const expires = 'expires='+date.toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)}; ${expires}; path=/`
+}
+
+export async function deleteDocument(documentId: number): Promise<void> {
+  await api.delete(`/documents/${documentId}`);
+}
+
+var sessionId = getCookie('sessionId')
+
+if(!sessionId){
+  console.log("no sessionId cookie found setting it now");
+  setCookie('sessionId', crypto.randomUUID(), 10);
+  sessionId = getCookie('sessionId')
+}
+console.log(`sessionId created or found: ${sessionId}`)
 
 const api = axios.create({
   baseURL: API_BASE,
   headers: {
     'Content-Type': 'application/json',
+    'GuestUserSessionId': sessionId
   },
 });
+
 
 export async function getBackendStatus(): Promise<BackendStatus> {
   const { data } = await api.get('/health');
@@ -57,16 +98,37 @@ export async function getDocuments(collectionId: number): Promise<Document[]> {
 export async function uploadDocument(collectionId: number, file: File): Promise<Document> {
   const formData = new FormData();
   formData.append('file', file);
-
-  const { data } = await api.post(`/documents/upload/${collectionId}`, formData, {
+  const {data} = await api.post(`/documents/upload_url/${collectionId}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
-  return data;
+  const upload_url = data["presigned_upload_put_url"] 
+
+  const res = await fetch(upload_url,{
+    method: "PUT",
+    body: file,
+    headers: file.type ? {"Content-Type": file.type} : undefined
+  })
+  if(!res.ok){
+    const text = await res.text().catch(()=>"");
+    throw new Error(`Upload failed: ${res.status} ${res.statusText} ${res.text}`);
+  }
+  // temporary return of type Document
+  return {
+    id: 1,
+    collection_id: collectionId,
+    filename: file.name,
+    file_size: file.size,
+    page_count: 1,
+    chunk_count: 1,
+    status: 'processing',
+    error_message: null,
+    created_at: new Date().toISOString(),
+  };
+  
+
 }
 
-export async function deleteDocument(documentId: number): Promise<void> {
-  await api.delete(`/documents/${documentId}`);
-}
+
 
 // ==================== Chat ====================
 

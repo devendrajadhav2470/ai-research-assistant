@@ -138,7 +138,7 @@ class TestRRF(unittest.TestCase):
     def test_rrf_empty_inputs(self):
         """Test RRF with empty inputs."""
         from app.services.retriever import HybridRetriever
-
+ 
         retriever = HybridRetriever.__new__(HybridRetriever)
         fused = retriever._reciprocal_rank_fusion([], [])
         self.assertEqual(len(fused), 0)

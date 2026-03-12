@@ -8,11 +8,12 @@ from datetime import datetime,timezone,timedelta
 logger = logging.getLogger(__name__)
 class UserService():
     
-    def create_user(self,email: str,password: str): 
+    def create_user(self,email: str,password: str, guest_user_session_id: str=None): 
         user = User(
-            id = uuid.uuid4().hex[:10],
+            id = uuid.uuid4(),
             email=email,
-            password_hash=bcrypt.hashpw(password.encode("utf-8"),bcrypt.gensalt()).decode("utf-8")
+            password_hash=bcrypt.hashpw(password.encode("utf-8"),bcrypt.gensalt()).decode("utf-8"),
+            guest_user_session_id=guest_user_session_id
         )
         try:
             db.session.add(user)
@@ -28,10 +29,39 @@ class UserService():
     
     def get_user_from_email(self, email: str):
         query = User.query.filter_by(email=email)
-        [user]  = query.all()
-        if not user:
+        users  = query.all()
+        if not len(users):
             logger.info(f"no user found for email={email}")
-        return user
+        return users[0]
+
+    def get_guest_user(self, guest_user_session_id: str):
+        # optionally validate the session_id to check if its uuid 
+        # guest_user email = guest_user_{session_id}@temporary.com
+        # guest_user_id = generate new one 
+        # guest user password = password
+        query = User.query.filter_by(guest_user_session_id = guest_user_session_id)
+        users = query.all()
+
+        if len(users):
+            return users[0]
+
+        logger.info(f"guest user not found, creating new user")
+        guest_user_email = f"guest_user_{guest_user_session_id}@temporary.com"
+        guest_user_password = "password"
+        self.create_user(
+            email=guest_user_email,
+            password=guest_user_password,
+            guest_user_session_id=guest_user_session_id
+        )
+
+        query = User.query.filter_by(guest_user_session_id = guest_user_session_id)
+        users = query.all()
+        return users[0]
+            # return {
+            #     "email":,
+            #     "id": 
+            #     "exp":
+            # }
 
     def create_token(self,payload):
         # TO DO: replace with env variable
