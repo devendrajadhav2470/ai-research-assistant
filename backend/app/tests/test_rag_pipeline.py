@@ -1,149 +1,244 @@
-"""Tests for RAG pipeline components."""
+"""Tests for RAGPipeline: query orchestration, streaming, citation extraction, and context formatting.
 
-import unittest
+All sub-services (HybridRetriever, LLMService, ChatService, EvaluationService)
+are mocked so the pipeline logic is tested in isolation.
+"""
+
+import pytest
 from unittest.mock import MagicMock, patch
 
-from app.services.evaluation_service import EvaluationService
+from app.services.rag_pipeline import RAGPipeline
 
 
-class TestEvaluationService(unittest.TestCase):
-    """Test the LLM-as-Judge evaluation service."""
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
 
-    def setUp(self):
-        self.mock_llm = MagicMock()
-        self.service = EvaluationService(llm_service=self.mock_llm)
+SAMPLE_CHUNKS = [
+    {
+        "document_id": 1,
+        "chunk_index": 0,
+        "source": "paper.pdf",
+        "page_number": 3,
+        "content": "Machine learning is a subset of AI.",
+        "rerank_score": 0.95,
+    },
+    {
+        "document_id": 1,
+        "chunk_index": 1,
+        "source": "paper.pdf",
+        "page_number": 4,
+        "content": "Deep learning uses neural networks." * 10,
+        "rerank_score": 0.82,
+    },
+    {
+        "document_id": 2,
+        "chunk_index": 0,
+        "source": "guide.pdf",
+        "page_number": 1,
+        "content": "RAG combines retrieval with generation.",
+        "rerank_score": 0.78,
+    },
+]
 
-    def test_parse_valid_evaluation(self):
-        """Test parsing a valid JSON evaluation response."""
-        response = '''{
-            "faithfulness": {"score": 4, "explanation": "Well grounded"},
-            "relevance": {"score": 5, "explanation": "Directly addresses question"},
-            "completeness": {"score": 3, "explanation": "Missing some details"},
-            "citation_accuracy": {"score": 4, "explanation": "Mostly correct"},
-            "overall_score": 4.0,
-            "summary": "Good quality answer"
-        }'''
 
-        result = self.service._parse_evaluation_response(response)
+@pytest.fixture
+def mock_deps():
+    """Create mocked sub-services for RAGPipeline."""
+    retriever = MagicMock()
+    retriever.retrieve.return_value = SAMPLE_CHUNKS
 
-        self.assertEqual(result["faithfulness"]["score"], 4)
-        self.assertEqual(result["relevance"]["score"], 5)
-        self.assertEqual(result["completeness"]["score"], 3)
-        self.assertEqual(result["citation_accuracy"]["score"], 4)
-        self.assertEqual(result["overall_score"], 4.0)
+    llm = MagicMock()
+    llm.generate.return_value = "This is the answer."
+    llm.generate_stream.return_value = iter(["This ", "is ", "the ", "answer."])
 
-    def test_parse_markdown_wrapped_json(self):
-        """Test parsing JSON wrapped in markdown code blocks."""
-        response = '''```json
-{
-    "faithfulness": {"score": 5, "explanation": "All claims supported"},
-    "relevance": {"score": 4, "explanation": "Relevant"},
-    "completeness": {"score": 4, "explanation": "Comprehensive"},
-    "citation_accuracy": {"score": 5, "explanation": "Accurate citations"},
-    "overall_score": 4.5,
-    "summary": "High quality"
-}
-```'''
+    chat = MagicMock()
+    chat.get_chat_history.return_value = []
 
-        result = self.service._parse_evaluation_response(response)
-        self.assertEqual(result["overall_score"], 4.5)
+    evaluation = MagicMock()
+    evaluation.evaluate.return_value = {"overall_score": 4.0}
 
-    def test_parse_invalid_json(self):
-        """Test handling of invalid JSON response."""
-        response = "This is not valid JSON at all"
-        result = self.service._parse_evaluation_response(response)
-        self.assertTrue(result.get("error", False) or result["overall_score"] == 0)
+    return retriever, llm, chat, evaluation
 
-    def test_default_evaluation(self):
-        """Test the default evaluation fallback."""
-        result = EvaluationService._default_evaluation("test error")
-        self.assertEqual(result["overall_score"], 0)
-        self.assertTrue(result["error"])
-        self.assertIn("test error", result["summary"])
 
-    def test_format_context(self):
-        """Test formatting of context chunks."""
-        chunks = [
-            {"source": "paper.pdf", "page_number": 1, "content": "Test content"},
-            {"source": "doc.pdf", "page_number": 5, "content": "More content"},
-        ]
+@pytest.fixture
+def pipeline(mock_deps):
+    """A RAGPipeline wired to mocked dependencies."""
+    retriever, llm, chat, evaluation = mock_deps
+    return RAGPipeline(
+        retriever=retriever,
+        llm_service=llm,
+        chat_service=chat,
+        evaluation_service=evaluation,
+    )
 
-        result = self.service._format_context(chunks)
-        self.assertIn("paper.pdf", result)
-        self.assertIn("Page 1", result)
-        self.assertIn("doc.pdf", result)
-        self.assertIn("Page 5", result)
 
-    def test_format_empty_context(self):
-        """Test formatting with no context."""
-        result = self.service._format_context([])
-        self.assertEqual(result, "No context provided.")
+# ── query (non-streaming) ────────────────────────────────────────────────
 
-    def test_evaluate_calls_llm(self):
-        """Test that evaluate calls the LLM service."""
-        self.mock_llm.generate.return_value = '''{
-            "faithfulness": {"score": 4, "explanation": "Good"},
-            "relevance": {"score": 4, "explanation": "Good"},
-            "completeness": {"score": 4, "explanation": "Good"},
-            "citation_accuracy": {"score": 4, "explanation": "Good"},
-            "overall_score": 4.0,
-            "summary": "Good answer"
-        }'''
+class TestQuery:
+    """Tests for RAGPipeline.query."""
 
-        result = self.service.evaluate(
-            question="What is ML?",
-            answer="ML is machine learning.",
-            context_chunks=[{"source": "doc.pdf", "page_number": 1, "content": "ML is machine learning."}],
+    def test_returns_expected_keys(self, pipeline):
+        """Result dict contains answer, citations, chunks, model_info."""
+        result = pipeline.query(collection_id=1, question="What is ML?")
+        assert "answer" in result
+        assert "citations" in result
+        assert "chunks" in result
+        assert "model_info" in result
+
+    def test_answer_comes_from_llm(self, pipeline):
+        """The answer field contains the LLM's generated text."""
+        result = pipeline.query(collection_id=1, question="Q")
+        assert result["answer"] == "This is the answer."
+
+    def test_retriever_called_with_collection(self, pipeline, mock_deps):
+        """The retriever is called with the correct collection_id."""
+        pipeline.query(collection_id=42, question="Q")
+        mock_deps[0].retrieve.assert_called_once()
+        call_kwargs = mock_deps[0].retrieve.call_args.kwargs
+        assert call_kwargs["collection_id"] == 42
+
+    def test_model_info_uses_defaults(self, pipeline):
+        """When provider/model_name are None, defaults appear in model_info."""
+        result = pipeline.query(collection_id=1, question="Q")
+        assert "provider" in result["model_info"]
+        assert "model" in result["model_info"]
+
+
+# ── query_stream ─────────────────────────────────────────────────────────
+
+class TestQueryStream:
+    """Tests for RAGPipeline.query_stream."""
+
+    def test_yields_chunks_tokens_done(self, pipeline):
+        """The stream yields chunks, token, and done events."""
+        events = list(pipeline.query_stream(collection_id=1, question="Q"))
+        types = [e["type"] for e in events]
+        assert types[0] == "chunks"
+        assert "token" in types
+        assert types[-1] == "done"
+
+    def test_done_event_contains_full_answer(self, pipeline):
+        """The done event contains the concatenated answer."""
+        events = list(pipeline.query_stream(collection_id=1, question="Q"))
+        done = [e for e in events if e["type"] == "done"][0]
+        assert done["data"]["answer"] == "This is the answer."
+
+    def test_error_event_on_exception(self, mock_deps):
+        """When the retriever raises, an error event is yielded."""
+        retriever, llm, chat, evaluation = mock_deps
+        retriever.retrieve.side_effect = RuntimeError("DB down")
+        pipeline = RAGPipeline(
+            retriever=retriever, llm_service=llm,
+            chat_service=chat, evaluation_service=evaluation,
         )
+        events = list(pipeline.query_stream(collection_id=1, question="Q"))
+        assert any(e["type"] == "error" for e in events)
 
-        self.mock_llm.generate.assert_called_once()
-        self.assertEqual(result["overall_score"], 4.0)
+
+# ── evaluate_response ─────────────────────────────────────────────────────
+
+class TestEvaluateResponse:
+    """Tests for RAGPipeline.evaluate_response."""
+
+    def test_delegates_to_evaluation_service(self, pipeline, mock_deps):
+        """evaluate_response forwards to EvaluationService.evaluate."""
+        result = pipeline.evaluate_response(
+            question="Q", answer="A", chunks=SAMPLE_CHUNKS,
+        )
+        mock_deps[3].evaluate.assert_called_once()
+        assert result["overall_score"] == 4.0
 
 
-class TestRRF(unittest.TestCase):
-    """Test Reciprocal Rank Fusion logic."""
+# ── _build_messages ──────────────────────────────────────────────────────
 
-    def test_rrf_merges_results(self):
-        """Test that RRF correctly merges results from two sources."""
-        from app.services.retriever import HybridRetriever
+class TestBuildMessages:
+    """Tests for RAGPipeline._build_messages."""
 
-        retriever = HybridRetriever.__new__(HybridRetriever)
+    def test_without_history(self, pipeline):
+        """Without a conversation, messages are [system, user]."""
+        msgs = pipeline._build_messages(question="Hello?", chunks=[])
+        assert msgs[0]["role"] == "system"
+        assert msgs[-1]["role"] == "user"
 
-        vector_results = [
-            ({"document_id": 1, "chunk_index": 0, "content": "A"}, 0.9),
-            ({"document_id": 1, "chunk_index": 1, "content": "B"}, 0.8),
-            ({"document_id": 2, "chunk_index": 0, "content": "C"}, 0.7),
+    def test_with_history(self, pipeline, mock_deps):
+        """With chat history, history messages appear between system and user."""
+        mock_deps[2].get_chat_history.return_value = [
+            {"role": "user", "content": "prev Q"},
+            {"role": "assistant", "content": "prev A"},
         ]
-        bm25_results = [
-            ({"document_id": 2, "chunk_index": 0, "content": "C"}, 5.0),
-            ({"document_id": 1, "chunk_index": 0, "content": "A"}, 3.0),
-            ({"document_id": 3, "chunk_index": 0, "content": "D"}, 2.0),
+        msgs = pipeline._build_messages(
+            question="new Q", chunks=[], conversation_id=1,
+        )
+        assert msgs[0]["role"] == "system"
+        assert len(msgs) >= 3
+
+    def test_deduplicates_user_question_from_history(self, pipeline, mock_deps):
+        """If the user question is already the last history message, it is not duplicated."""
+        mock_deps[2].get_chat_history.return_value = [
+            {"role": "user", "content": "same Q"},
         ]
-
-        fused = retriever._reciprocal_rank_fusion(vector_results, bm25_results)
-
-        self.assertGreater(len(fused), 0)
-        # All unique chunks should be present
-        chunk_keys = {f"{r['document_id']}_{r['chunk_index']}" for r in fused}
-        self.assertIn("1_0", chunk_keys)
-        self.assertIn("1_1", chunk_keys)
-        self.assertIn("2_0", chunk_keys)
-        self.assertIn("3_0", chunk_keys)
-
-        # RRF scores should be present
-        for result in fused:
-            self.assertIn("rrf_score", result)
-            self.assertGreater(result["rrf_score"], 0)
-
-    def test_rrf_empty_inputs(self):
-        """Test RRF with empty inputs."""
-        from app.services.retriever import HybridRetriever
- 
-        retriever = HybridRetriever.__new__(HybridRetriever)
-        fused = retriever._reciprocal_rank_fusion([], [])
-        self.assertEqual(len(fused), 0)
+        msgs = pipeline._build_messages(
+            question="same Q", chunks=[], conversation_id=1,
+        )
+        user_msgs = [m for m in msgs if m["role"] == "user"]
+        assert len(user_msgs) == 1
 
 
-if __name__ == "__main__":
-    unittest.main()
+# ── _format_context ──────────────────────────────────────────────────────
 
+class TestFormatContext:
+    """Tests for RAGPipeline._format_context."""
+
+    def test_empty_chunks(self, pipeline):
+        """Empty chunk list returns 'No relevant context found.'"""
+        assert pipeline._format_context([]) == "No relevant context found."
+
+    def test_formats_with_rerank_score(self, pipeline):
+        """Chunks with rerank_score include relevance info."""
+        result = pipeline._format_context(SAMPLE_CHUNKS[:1])
+        assert "paper.pdf" in result
+        assert "0.950" in result
+
+    def test_ctx_tags_present(self, pipeline):
+        """Output contains XML-like <ctx> tags."""
+        result = pipeline._format_context(SAMPLE_CHUNKS[:1])
+        assert "<ctx" in result
+        assert "</ctx>" in result
+
+
+# ── _extract_citations ───────────────────────────────────────────────────
+
+class TestExtractCitations:
+    """Tests for RAGPipeline._extract_citations."""
+
+    def test_deduplication(self, pipeline):
+        """Duplicate source+page combinations are deduplicated."""
+        dup_chunks = [
+            {"source": "a.pdf", "page_number": 1, "content": "x", "document_id": 1, "rerank_score": 0.9},
+            {"source": "a.pdf", "page_number": 1, "content": "y", "document_id": 1, "rerank_score": 0.8},
+        ]
+        cites = pipeline._extract_citations(dup_chunks)
+        assert len(cites) == 1
+
+    def test_content_preview_truncation(self, pipeline):
+        """Content previews longer than 200 chars are truncated with '...'."""
+        long_content = "A" * 300
+        chunks = [{"source": "x.pdf", "page_number": 1, "document_id": 1,
+                    "content": long_content, "rerank_score": 0.5}]
+        cites = pipeline._extract_citations(chunks)
+        assert cites[0]["content_preview"].endswith("...")
+
+    def test_short_content_not_truncated(self, pipeline):
+        """Content within 200 chars does not end with '...'."""
+        chunks = [{"source": "x.pdf", "page_number": 1, "document_id": 1,
+                    "content": "short", "rerank_score": 0.5}]
+        cites = pipeline._extract_citations(chunks)
+        assert not cites[0]["content_preview"].endswith("...")
+
+    def test_relevance_score_rounded(self, pipeline):
+        """rerank_score is rounded to 3 decimal places."""
+        chunks = [{"source": "x.pdf", "page_number": 1, "document_id": 1,
+                    "content": "c", "rerank_score": 0.123456}]
+        cites = pipeline._extract_citations(chunks)
+        assert cites[0]["relevance_score"] == 0.123

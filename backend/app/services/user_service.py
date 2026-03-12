@@ -10,7 +10,7 @@ class UserService():
     
     def create_user(self,email: str,password: str, guest_user_session_id: str=None): 
         user = User(
-            id = uuid.uuid4(),
+            id = str(uuid.uuid4()),
             email=email,
             password_hash=bcrypt.hashpw(password.encode("utf-8"),bcrypt.gensalt()).decode("utf-8"),
             guest_user_session_id=guest_user_session_id
