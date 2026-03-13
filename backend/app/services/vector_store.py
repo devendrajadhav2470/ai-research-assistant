@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 class VectorStore:
-    """Manages FAISS indices per collection with disk persistence."""
 
     def __init__(self, index_dir: str = None):
 
