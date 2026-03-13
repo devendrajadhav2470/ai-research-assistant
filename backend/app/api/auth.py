@@ -85,8 +85,21 @@ def login_user():
     if not email or not password:
         return jsonify({"error": "you must provide email and password for logging in"}), 401
 
+    if len(password)!=6:
+        return jsonify({"error": "password length is not equal to 6 chars"}), 401
+        
+    try:
+        valid = validate_email(email)
+        normalized_email = valid.email
+        logger.info(f"Email validated and normalized: {normalized_email}")
+    except EmailNotValidError as e:
+        logger.info(f"Email validation failure: {e}")
+        return jsonify({"error": "Email validation failed"}), 401
+
+
+
     user_service = UserService()
-    user_id = user_service.verify_user_pwd(password = password,email=email);
+    user_id = user_service.verify_user_pwd(password = password,email=normalized_email);
     if user_id:
         # create jwt tokens 
         token = user_service.create_token(payload = {
