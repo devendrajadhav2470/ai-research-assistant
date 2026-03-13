@@ -13,42 +13,12 @@ from flask import current_app
 from bs4 import BeautifulSoup
 import io
 from PIL import Image
-# import pytesseract
 import fitz  # PyMuPDF
 
 from app.config import Config
 
 logger = logging.getLogger(__name__)
 
-# pytesseract.pytesseract.tesseract_cmd = Config.TESSERACT_EXE_PATH
-
-# def ocr_entire_page(pdf_path: str, page_number_0based: int) -> str:
-#     doc = fitz.open(pdf_path)
-#     page = doc[page_number_0based]
-
-#     # render: scale 3.0 ~ ~216 DPI if source  72dpi;is 4.0 is even better for small fonts
-#     mat = fitz.Matrix(4.0, 4.0)
-#     pix = page.get_pixmap(matrix=mat, alpha=False)
-
-#     img = Image.open(io.BytesIO(pix.tobytes("png")))
-
-#     # optional: basic preprocessing
-#     img = img.convert("L")
-#     img = img.point(lambda p: 255 if p > 180 else 0)  # simple threshold
-
-#     config = "--oem 1 --psm 6"  # try psm 4/6/11 depending on layout
-
-#     extracted_text = ""
-
-#     logger.info(f"OCR done on pdf: {pdf_path} of the page_number: {page_number_0based}")
-
-#     try:
-#         extracted_text = pytesseract.image_to_string(img, lang="eng", config=config)
-#     except Exception as e:
-#         logger.error(f"there was an error extracting text from pdf image using pytesseract: {e}")
-    
-#     logger.info(f"Text Extracted from pdf page: {extracted_text}")
-#     return extracted_text
     
 
 class DocumentProcessor:
@@ -94,85 +64,10 @@ class DocumentProcessor:
                             "page_number": i + 1,
                             "text": text,
                         })
-                    # else:
-                    #     resources = page.get("/Resources")
-                        
-                    #     if not resources: 
-                    #         continue                 
-                               
-                        # TO DO FIX: should not pass file_path here, this way 
-                        # Every time i have to read the whole pdf from the disk
-                        # image_text = ocr_entire_page(file_path, i)
-                            
-
-                        # if image_text.strip():
-                        #     pages.append({
-                        #         "page_number": i + 1,
-                        #         "text": image_text.strip(),
-                        #     })
 
                 logger.info(
                     f"Extracted text from {len(pages)} pages of {filename}"
                 )
-            # elif ext == ".docx":
-            #     doc = DocxDocument(file_path)
-            #     # We'll treat each paragraph as a "page" for simplicity here
-            #     # TO DO: this is not working, the chunk is becoming too small (1-2 sentence) sometimes
-            #     for i, para in enumerate(doc.paragraphs):
-            #         text = para.text or ""
-            #         if text.strip():
-            #             pages.append({
-            #                 "page_number": i + 1,
-            #                 "text": text.strip(),
-            #             })
-            #     logger.info(
-            #         f"Extracted text from {len(pages)} paragraphs of {filename}"
-            #     )
-            
-            # elif (ext == ".txt" or ext == ".md"):
-            #     with open(file_path,"r",encoding="utf-8") as f: 
-            #         text = f.read()
-                
-            #     if text.strip():
-            #         pages.append({
-            #             "page_number": 1,
-            #             "text": text.strip()
-            #         })
-
-            #     logger.info(
-            #         f"Extracted text from {len(pages)} of {filename}"
-            #     )
-            # elif (ext == ".html"):
-            #     with open(file_path,"r",encoding="utf-8") as f:
-            #         html= f.read()
-            #     doc = ReadabilityDocument(html)
-            #     clean_html= doc.summary()
-            #     soup = BeautifulSoup(clean_html,"html.parser")
-                
-            #     main_content = soup.find("main") or soup.find("article")
-            #     if main_content:
-            #         text = main_content.get_text(separator="\n", strip=True)
-            #     else: 
-            #         # Remove unwanted elements
-            #         for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
-            #             tag.decompose()
-
-            #         # Get text
-            #         text = soup.get_text(separator="\n")
-
-            #         # Clean empty lines
-            #         lines = [line.strip() for line in text.splitlines()]
-            #         text = "\n".join(line for line in lines if line)
-
-            #     if text.strip():
-            #         pages.append({
-            #             "page_number": 1,
-            #             "text": text.strip()
-            #         })
-
-            #     logger.info(
-            #         f"Extracted text from {len(pages)} of {filename}"
-            #     )
             
             else:
                 raise ValueError(f"Unsupported file extension: {ext}")
