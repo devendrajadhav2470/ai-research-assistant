@@ -11,7 +11,7 @@ class Config:
     """Base configuration."""
 
     # Flask
-    SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
+    SECRET_KEY = os.getenv("SECRET_KEY")
     DEBUG = os.getenv("FLASK_DEBUG", "0") == "1"
 
     # Database
@@ -20,18 +20,15 @@ class Config:
 
     # File uploads
     UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "./data/uploads")
+    
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50 MB max upload
-    MAX_QUESTION_LENGTH = 500 #500 characters
-    # BM25
-    BM25_INDEX_DIR = os.getenv("BM25_INDEX_DIR", "./data/bm25_indices")
+    MAX_QUESTION_LENGTH = int(os.getenv("MAX_QUESTION_LENGTH"))
 
     # Embedding model
-    EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "BAAI/bge-base-en-v1.5")
+    EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME")
 
     # Reranker model
-    RERANKER_MODEL_NAME = os.getenv(
-        "RERANKER_MODEL_NAME", "cross-encoder/ms-marco-MiniLM-L-6-v2"
-    )
+    RERANKER_MODEL_NAME = os.getenv("RERANKER_MODEL_NAME")
 
     # LLM providers
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
