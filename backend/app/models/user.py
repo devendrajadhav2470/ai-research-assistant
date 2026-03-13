@@ -25,7 +25,7 @@ class User(db.Model):
     updated_at = db.Column(db.DateTime, default= lambda: datetime.now(timezone.utc), onupdate= lambda: datetime.now(timezone.utc))
     status = db.Column(db.Enum(Status,name="status_enum"), nullable=False, default = Status("active"))
     mfa_enabled = db.Column(db.Boolean,default=False,nullable = False)
-    guest_user_session_id = db.Column(db.String(40), unique=True,nullable=False)
+    guest_user_session_id = db.Column(db.String(40), unique=True,nullable=True)
 #     user_type = db.Column(db.Enum())
 
 
