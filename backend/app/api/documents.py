@@ -20,6 +20,7 @@ from app.services.vector_store import VectorStore
 from app.services.bm25_index import BM25Index
 from app.config import Config
 from app.api.auth import token_required
+from app.extensions import limiter
 import json 
 from typing import List
 
@@ -95,6 +96,7 @@ def create_presigned_get_url(
         raise RuntimeError(f"Failed to create a presigned get url:{e}")
 
 @documents_bp.route("/collection/<int:collection_id>", methods=["GET"])
+@limiter.limit("60 per minute")
 @token_required
 def list_documents(collection_id):
     """List all documents in a collection."""
@@ -111,6 +113,7 @@ def list_documents(collection_id):
 
 
 @documents_bp.route("/upload_url/<int:collection_id>", methods=["POST"])
+@limiter.limit("20 per minute")
 @token_required
 def get_upload_url(collection_id):
 
@@ -152,11 +155,12 @@ def get_upload_url(collection_id):
     })
 
 @documents_bp.route("/upload/<int:collection_id>", methods=["POST"])
+@limiter.limit("10 per minute")
 @token_required
 def upload_document(collection_id):
     """Upload a document to a collection and process it."""
 
-    SUPPORTED_FILE_TYPES = [".pdf",".docx", ".txt", ".md",".html"]
+    SUPPORTED_FILE_TYPES = [".pdf"]
     collection = db.session.get(Collection, collection_id)
     if not collection:
         return jsonify({"error": "Collection not found"}), 404
@@ -282,6 +286,7 @@ def upload_document(collection_id):
 
 
 @documents_bp.route("/<int:document_id>", methods=["GET"])
+@limiter.limit("60 per minute")
 @token_required
 def get_document(document_id):
     """Get a specific document."""
@@ -292,6 +297,7 @@ def get_document(document_id):
 
 
 @documents_bp.route("/<int:document_id>", methods=["DELETE"])
+@limiter.limit("30 per minute")
 @token_required
 def delete_document(document_id):
     """Delete a document and its chunks, embeddings."""

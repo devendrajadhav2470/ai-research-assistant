@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request, jsonify,g
 
-from app.extensions import db
+from app.extensions import db, limiter
 from app.api.auth import token_required
 import logging
 
@@ -15,6 +15,7 @@ collections_bp = Blueprint("collections", __name__)
 
 
 @collections_bp.route("", methods=["GET"])
+@limiter.limit("60 per minute")
 @token_required
 def list_collections():
     """List all collections."""
@@ -23,6 +24,7 @@ def list_collections():
 
 
 @collections_bp.route("", methods=["POST"])
+@limiter.limit("30 per minute")
 @token_required
 def create_collection():
     """Create a new collection."""
@@ -36,11 +38,6 @@ def create_collection():
         description=data.get("description", ""),
         user_id=g.user["id"]
     )
-    # try:
-    #     vector_store._create_or_load_collection(name=data["name"])
-    # except Exception as e:
-    #     logger.error(f"there was an error creating collection{e}")
-    #     return jsonify({"error": e})
 
     db.session.add(collection)
     db.session.commit()
@@ -49,6 +46,7 @@ def create_collection():
 
 
 @collections_bp.route("/<int:collection_id>", methods=["GET"])
+@limiter.limit("60 per minute")
 @token_required
 def get_collection(collection_id):
     """Get a specific collection."""
@@ -59,6 +57,7 @@ def get_collection(collection_id):
 
 
 @collections_bp.route("/<int:collection_id>", methods=["PUT"])
+@limiter.limit("30 per minute")
 @token_required
 def update_collection(collection_id):
     """Update a collection."""
@@ -77,6 +76,7 @@ def update_collection(collection_id):
 
 
 @collections_bp.route("/<int:collection_id>", methods=["DELETE"])
+@limiter.limit("30 per minute")
 @token_required
 def delete_collection(collection_id):
     """Delete a collection and all associated data."""

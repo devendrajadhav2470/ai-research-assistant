@@ -7,6 +7,7 @@ from app.extensions import db
 from app.models.document import Collection
 from app.config import Config
 from app.api.auth import token_required
+from app.extensions import limiter
 import re
 
 logger = logging.getLogger(__name__)
@@ -15,6 +16,7 @@ retrieval_bp = Blueprint("retrieval", __name__)
 
 
 @retrieval_bp.route("/search", methods=["POST"])
+@limiter.limit("60 per minute")
 @token_required
 def get_chunks():
     request_data = request.get_json()

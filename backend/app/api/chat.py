@@ -12,6 +12,7 @@ from app.services.chat_service import ChatService
 from app.services.llm_service import LLMService
 import re
 from app.api.auth import token_required
+from app.extensions import limiter
 import time
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,7 @@ chat_bp = Blueprint("chat", __name__)
 
 
 @chat_bp.route("/conversations/collection/<int:collection_id>", methods=["GET"])
+@limiter.limit("60 per minute")
 @token_required
 def list_conversations(collection_id):
     """List all conversations in a collection."""
@@ -32,6 +34,7 @@ def list_conversations(collection_id):
 
 
 @chat_bp.route("/conversations", methods=["POST"])
+@limiter.limit("30 per minute")
 @token_required
 def create_conversation():
     """Create a new conversation."""
@@ -56,6 +59,7 @@ def create_conversation():
 
 
 @chat_bp.route("/conversations/<int:conversation_id>", methods=["GET"])
+@limiter.limit("60 per minute")
 @token_required
 def get_conversation(conversation_id):
     """Get a conversation with its messages, supporting pagination."""
@@ -88,6 +92,7 @@ def get_conversation(conversation_id):
 
 
 @chat_bp.route("/conversations/<int:conversation_id>", methods=["PATCH"])
+@limiter.limit("30 per minute")
 @token_required
 def update_conversation(conversation_id):
     """Update a conversation."""
@@ -103,6 +108,7 @@ def update_conversation(conversation_id):
     return jsonify(conversation.to_dict())
 
 @chat_bp.route("/conversations/<int:conversation_id>", methods=["DELETE"])
+@limiter.limit("30 per minute")
 @token_required
 def delete_conversation(conversation_id):
     """Delete a conversation."""
@@ -113,6 +119,7 @@ def delete_conversation(conversation_id):
 
 
 @chat_bp.route("/query", methods=["POST"])
+@limiter.limit("30 per minute")
 @token_required
 def query():
     """
@@ -208,6 +215,7 @@ def query():
 
 
 @chat_bp.route("/query/stream", methods=["POST"])
+@limiter.limit("30 per minute")
 @token_required
 def query_stream():
     """
@@ -312,6 +320,7 @@ def query_stream():
 
 
 @chat_bp.route("/models", methods=["GET"])
+@limiter.limit("60 per minute")
 @token_required
 def list_models():
     """List available LLM models grouped by provider."""

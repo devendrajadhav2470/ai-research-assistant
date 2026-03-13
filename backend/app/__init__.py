@@ -4,7 +4,7 @@ import os
 import boto3
 from flask import Flask
 from app.config import Config
-from app.extensions import db, cors
+from app.extensions import db, cors, limiter
 import chromadb
 import logging 
 from app.services.document_processor import DocumentProcessor
@@ -31,8 +31,7 @@ def create_app(config_class=Config):
     app.extensions['s3'] = boto3.client("s3")
     app.extensions['embedding_service'] = EmbeddingService(device='cpu')
     app.extensions['document_processor'] = DocumentProcessor(app.extensions['embedding_service'])
-    
-    # Register blueprints
+    # Register blueprints first so limiter can discover routes
     from app.api.documents import documents_bp
     from app.api.collections import collections_bp
     from app.api.chat import chat_bp
@@ -47,6 +46,8 @@ def create_app(config_class=Config):
     app.register_blueprint(config_bp, url_prefix="/api/config")
     app.register_blueprint(retrieval_bp,url_prefix="/api/retrieval")
     app.register_blueprint(auth_bp,url_prefix="/api/auth")
+    limiter.init_app(app)
+    app.extensions['limiter'] = limiter
     # Create database tables
     with app.app_context():
         from app.models.document import Collection, Document, Chunk  # noqa: F401

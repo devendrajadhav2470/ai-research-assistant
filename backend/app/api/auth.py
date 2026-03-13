@@ -4,6 +4,7 @@ from flask import request
 from flask import jsonify 
 from email_validator import validate_email,EmailNotValidError
 from app.services.user_service import UserService
+from app.extensions import limiter
 from functools import wraps
 
 logger = logging.getLogger(__name__)
@@ -43,7 +44,8 @@ def token_required(f):
         return f(*args,**kwargs)
     return decorator
 
-@auth_bp.route("/signup",methods=['POST'])
+@auth_bp.route("/signup", methods=["POST"])
+@limiter.limit("5 per minute")
 def register_user():
     data= request.get_json()
 
@@ -73,7 +75,8 @@ def register_user():
     user_service.create_user(email=normalized_email,password=password)
     return jsonify({"message": f"user created {email}"})
 
-@auth_bp.route("/signin",methods=['POST'])
+@auth_bp.route("/signin", methods=["POST"])
+@limiter.limit("10 per minute")
 def login_user():
     data= request.get_json()
     if not data:

@@ -5,6 +5,7 @@ from flask import Blueprint, jsonify
 import os
 from dotenv import load_dotenv
 from app.api.auth import token_required
+from app.extensions import limiter
 logger = logging.getLogger(__name__)
 
 config_bp = Blueprint("config", __name__)
@@ -12,6 +13,7 @@ config_bp = Blueprint("config", __name__)
 load_dotenv()
 
 @config_bp.route("/defaults", methods=["GET"])
+@limiter.limit("60 per minute")
 @token_required
 def get_defaults():
 

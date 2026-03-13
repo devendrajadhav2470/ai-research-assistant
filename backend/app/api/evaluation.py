@@ -9,6 +9,7 @@ from app.services.rag_pipeline import RAGPipeline
 from app.services.chat_service import ChatService
 from app.services.retriever import HybridRetriever
 from app.api.auth import token_required
+from app.extensions import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,7 @@ evaluation_bp = Blueprint("evaluation", __name__)
 
 
 @evaluation_bp.route("/evaluate/<int:message_id>", methods=["POST"])
+@limiter.limit("20 per minute")
 @token_required
 def evaluate_message(message_id):
     """
@@ -85,6 +87,7 @@ def evaluate_message(message_id):
 
 
 @evaluation_bp.route("/message/<int:message_id>", methods=["GET"])
+@limiter.limit("60 per minute")
 @token_required
 def get_evaluation(message_id):
     """Get the evaluation results for a message."""
