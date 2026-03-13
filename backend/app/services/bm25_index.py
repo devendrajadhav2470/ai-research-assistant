@@ -160,7 +160,6 @@ class BM25Index:
         else:
             self._indices[collection_id] = None
 
-        self._save_index(collection_id)
         logger.info(
             f"Removed document {document_id} from BM25 index for collection {collection_id}"
         )
