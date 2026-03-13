@@ -29,10 +29,9 @@ def create_app(config_class=Config):
     app.extensions['chroma_client'] = chromadb.HttpClient(host="localhost",port=8000) 
 
     app.extensions['s3'] = boto3.client("s3")
-    app.extensions['document_processor'] = DocumentProcessor()
-    app.extensions['embedding_service'] = EmbeddingService()
-
-    app.extensions['device'] = 'cpu'
+    app.extensions['embedding_service'] = EmbeddingService(device='cpu')
+    app.extensions['document_processor'] = DocumentProcessor(app.extensions['embedding_service'])
+    
     # Register blueprints
     from app.api.documents import documents_bp
     from app.api.collections import collections_bp

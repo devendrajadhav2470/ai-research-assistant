@@ -4,6 +4,7 @@ import bcrypt
 import uuid 
 import jwt
 import logging 
+from app.config import Config
 from datetime import datetime,timezone,timedelta
 logger = logging.getLogger(__name__)
 class UserService():
@@ -65,13 +66,13 @@ class UserService():
 
     def create_token(self,payload):
         # TO DO: replace with env variable
-        secret_key = "temporary_secret_key"
+        secret_key = Config.JWT_SECRET_KEY
         payload['exp'] = datetime.now(timezone.utc) + timedelta(hours= 1)
         return jwt.encode(payload, secret_key,algorithm="HS256")
     def decode_token(self,token):
         # TO DO: r
         # eplace with env variable
-        secret_key = "temporary_secret_key"
+        secret_key = Config.JWT_SECRET_KEY
         try:
             return jwt.decode(token,secret_key,algorithms=["HS256"])
         except jwt.ExpiredSignatureError:
