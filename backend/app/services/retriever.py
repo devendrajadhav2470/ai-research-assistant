@@ -7,7 +7,6 @@ from typing import List, Dict, Any, Tuple
 from sentence_transformers import CrossEncoder
 from flask import current_app
 from app.config import Config
-from app.services.embedding_service import EmbeddingService
 from app.services.vector_store import VectorStore
 from app.services.bm25_index import BM25Index
 
@@ -30,7 +29,7 @@ class HybridRetriever:
         top_k_retrieval: int = None,
         top_k_rerank: int = None,
     ):
-        self.embedding_service = embedding_service or EmbeddingService()
+        self.embedding_service = embedding_service or current_app.extensions['embedding_service']
         self.vector_store = vector_store or VectorStore()
         self.bm25_index = bm25_index or BM25Index()
         self.top_k_retrieval = top_k_retrieval or Config.TOP_K_RETRIEVAL

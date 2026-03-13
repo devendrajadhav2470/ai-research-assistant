@@ -7,20 +7,20 @@ from readability import Document as ReadabilityDocument  # pyright: ignore[repor
 from docx import Document as DocxDocument
 from pypdf import PdfReader
 from langchain_experimental.text_splitter import SemanticChunker
-from app.services.embedding_service import EmbeddingService
 from werkzeug.datastructures import FileStorage
+from flask import current_app
 
 from bs4 import BeautifulSoup
 import io
 from PIL import Image
-import pytesseract
+# import pytesseract
 import fitz  # PyMuPDF
 
 from app.config import Config
 
 logger = logging.getLogger(__name__)
 
-pytesseract.pytesseract.tesseract_cmd = Config.TESSERACT_EXE_PATH
+# pytesseract.pytesseract.tesseract_cmd = Config.TESSERACT_EXE_PATH
 
 # def ocr_entire_page(pdf_path: str, page_number_0based: int) -> str:
 #     doc = fitz.open(pdf_path)
@@ -62,7 +62,7 @@ class DocumentProcessor:
         self.chunk_size = chunk_size or Config.CHUNK_SIZE
         self.chunk_overlap = chunk_overlap or Config.CHUNK_OVERLAP
 
-        embedding_service = EmbeddingService()
+        embedding_service = current_app.extensions['embedding_service']
         self.embeddings = embedding_service.get_embedding_model()
 
         self.chunker = SemanticChunker(

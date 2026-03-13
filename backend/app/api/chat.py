@@ -12,6 +12,7 @@ from app.services.chat_service import ChatService
 from app.services.llm_service import LLMService
 import re
 from app.api.auth import token_required
+import time
 logger = logging.getLogger(__name__)
 
 chat_bp = Blueprint("chat", __name__)
@@ -34,6 +35,8 @@ def list_conversations(collection_id):
 @token_required
 def create_conversation():
     """Create a new conversation."""
+
+    start = time.time()
     data = request.get_json()
     if not data or not data.get("collection_id"):
         return jsonify({"error": "collection_id is required"}), 400
@@ -47,6 +50,8 @@ def create_conversation():
         collection_id=data["collection_id"],
         title=data.get("title", "New Conversation"),
     )
+    end = time.time()
+    logger.info(f"conversation created in {(end-start)*1000} ms")
     return jsonify(conversation.to_dict()), 201
 
 
@@ -122,6 +127,7 @@ def query():
         "model_name": "string" (optional)
     }
     """
+    api_exec_start = time.time()
     data = request.get_json()
     if not data:
         return jsonify({"error": "Request body is required"}), 400
@@ -169,6 +175,7 @@ def query():
     )
 
     # Run RAG pipeline
+    rag_query_start = time.time()
     rag = RAGPipeline()
     result = rag.query(
         collection_id=collection_id,
@@ -176,7 +183,10 @@ def query():
         conversation_id=conversation_id,
         provider=provider,
         model_name=model_name,
-    )
+    )   
+    rag_query_end = time.time()
+    logger.info(f"RAG Pipeline executed in {(rag_query_end-rag_query_start)*1000} ms")
+
 
     # Save assistant message
     message = chat_service.add_message(

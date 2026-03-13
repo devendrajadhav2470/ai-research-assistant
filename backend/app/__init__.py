@@ -7,6 +7,8 @@ from app.config import Config
 from app.extensions import db, cors
 import chromadb
 import logging 
+from app.services.document_processor import DocumentProcessor
+from app.services.embedding_service import EmbeddingService
 
 def create_app(config_class=Config):
     """Create and configure the Flask application."""
@@ -27,7 +29,8 @@ def create_app(config_class=Config):
     app.extensions['chroma_client'] = chromadb.HttpClient(host="localhost",port=8000) 
 
     app.extensions['s3'] = boto3.client("s3")
-
+    app.extensions['document_processor'] = DocumentProcessor()
+    app.extensions['embedding_service'] = EmbeddingService()
 
     app.extensions['device'] = 'cpu'
     # Register blueprints

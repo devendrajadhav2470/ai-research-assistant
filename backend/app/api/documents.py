@@ -16,8 +16,6 @@ from werkzeug.datastructures import FileStorage
 from flask import current_app
 from app.extensions import db
 from app.models.document import Document, Chunk, Collection
-from app.services.document_processor import DocumentProcessor
-from app.services.embedding_service import EmbeddingService
 from app.services.vector_store import VectorStore
 from app.services.bm25_index import BM25Index
 from app.config import Config
@@ -206,7 +204,7 @@ def upload_document(collection_id):
 
     # Process the document
     try:
-        processor = DocumentProcessor()
+        processor = current_app.extensions['document_processor']
         result = processor.process_document(file, file.filename)
 
         # Save chunks to database
@@ -232,7 +230,7 @@ def upload_document(collection_id):
             db.session.add(chunk)
 
         # Generate embeddings
-        embedding_service = EmbeddingService()
+        embedding_service = current_app.extensions['embedding_service']
         texts = [c["content"] for c in result["chunks"]]
         embeddings = embedding_service.embed_texts(texts)
 
@@ -306,7 +304,7 @@ def delete_document(document_id):
     # Remove from vector store
     try:
         vector_store = VectorStore()
-        embedding_service = EmbeddingService()
+        embedding_service = current_app.extensions['embedding_service']
         vector_store.delete_document_vectors(
             collection_id=collection_id,
             document_id=document_id,
