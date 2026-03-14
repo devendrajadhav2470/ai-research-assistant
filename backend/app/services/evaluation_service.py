@@ -5,6 +5,7 @@ import logging
 from typing import Dict, Any, List, Optional
 
 from app.services.llm_service import LLMService
+from app.services.utils.format_context import format_context
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +88,7 @@ class EvaluationService:
             Evaluation dict with scores for each dimension.
         """
         # Format context for evaluation
-        context_text = self._format_context(context_chunks)
+        context_text = format_context(context_chunks)
 
         # Build evaluation prompt
         eval_prompt = EVALUATION_USER_PROMPT_TEMPLATE.format(
@@ -119,21 +120,6 @@ class EvaluationService:
         except Exception as e:
             logger.error(f"Evaluation failed: {e}")
             return self._default_evaluation(str(e))
-
-    def _format_context(self, chunks: List[Dict[str, Any]]) -> str:
-        """Format context chunks into a readable string for evaluation."""
-        if not chunks:
-            return "No context provided."
-
-        formatted = []
-        for i, chunk in enumerate(chunks, 1):
-            source = chunk.get("source", "Unknown")
-            page = chunk.get("page_number", "?")
-            content = chunk.get("content", "")
-            formatted.append(
-                f"[Source {i}: {source}, Page {page}]\n{content}"
-            )
-        return "\n\n".join(formatted)
 
     def _parse_evaluation_response(self, response: str) -> Dict[str, Any]:
         """Parse the LLM's evaluation response into a structured dict."""

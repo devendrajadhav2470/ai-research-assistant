@@ -3,7 +3,7 @@
 import logging
 import json
 from typing import Generator, List, Dict, Any, Optional
-
+from app.services.utils.format_context import format_context
 from app.services.retriever import HybridRetriever
 from app.services.llm_service import LLMService
 from app.services.chat_service import ChatService
@@ -221,7 +221,7 @@ class RAGPipeline:
     ) -> List[Dict[str, str]]:
         """Build the message list for the LLM with context and chat history."""
         # Format context from chunks
-        context = self._format_context(chunks)
+        context = format_context(chunks)
         print(context)
         # System prompt with context
         system_prompt = RAG_SYSTEM_PROMPT.format(context=context)
@@ -248,25 +248,6 @@ class RAGPipeline:
         print(messages)
         return messages
 
-    def _format_context(self, chunks: List[Dict[str, Any]]) -> str:
-        """Format retrieved chunks into a context string for the LLM prompt."""
-        if not chunks:
-            return "No relevant context found."
-
-        formatted = []
-        for i, chunk in enumerate(chunks, 1):
-            source = chunk.get("source", "Unknown")
-            page = chunk.get("page_number", "?")
-            content = chunk.get("content", "")
-            score_info = ""
-            if "rerank_score" in chunk:
-                score_info = f" (relevance: {chunk['rerank_score']:.3f})"
-
-            formatted.append(
-                f"<ctx id={i} doc='{source}' citation_page_number={page} {score_info}>\n{content}\n</ctx>"
-            )
-
-        return "\n\n---\n\n".join(formatted)
 
     def _extract_citations(self, chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Extract citation information from retrieved chunks."""
