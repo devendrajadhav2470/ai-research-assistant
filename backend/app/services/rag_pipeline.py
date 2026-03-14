@@ -9,7 +9,7 @@ from app.services.llm_service import LLMService
 from app.services.chat_service import ChatService
 from app.services.evaluation_service import EvaluationService
 from app.config import Config
-
+from flask import current_app
 logger = logging.getLogger(__name__)
 
 RAG_SYSTEM_PROMPT = """You are an AI Research Assistant that answers questions based on research papers, \
@@ -56,9 +56,9 @@ class RAGPipeline:
         evaluation_service: EvaluationService = None,
     ):
         self.retriever = retriever or HybridRetriever()
-        self.llm_service = llm_service or LLMService()
+        self.llm_service = llm_service or current_app.extensions['llm_service']
         self.chat_service = chat_service or ChatService()
-        self.evaluation_service = evaluation_service or EvaluationService(self.llm_service)
+        self.evaluation_service = evaluation_service or current_app.extensions['evaluation_service']
 
     def query(
         self,

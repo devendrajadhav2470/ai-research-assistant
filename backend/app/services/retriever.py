@@ -14,22 +14,17 @@ logger = logging.getLogger(__name__)
 
 
 class HybridRetriever:
-    """
-    Combines FAISS vector search + BM25 keyword search with
-    Reciprocal Rank Fusion (RRF) and cross-encoder reranking.
-    """
 
     _reranker = None
 
     def __init__(
         self,
-        embedding_service: EmbeddingService = None,
         vector_store: VectorStore = None,
         bm25_index: BM25Index = None,
         top_k_retrieval: int = None,
         top_k_rerank: int = None,
     ):
-        self.embedding_service = embedding_service or current_app.extensions['embedding_service']
+        self.embedding_service = current_app.extensions['embedding_service']
         self.vector_store = vector_store or VectorStore()
         self.bm25_index = bm25_index or BM25Index()
         self.top_k_retrieval = top_k_retrieval or Config.TOP_K_RETRIEVAL

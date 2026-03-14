@@ -9,7 +9,7 @@ from app.models.document import Collection
 from app.models.chat import Conversation, Message
 from app.services.rag_pipeline import RAGPipeline
 from app.services.chat_service import ChatService
-from app.services.llm_service import LLMService
+from flask import current_app
 import re
 from app.api.auth import token_required
 from app.extensions import limiter
@@ -324,4 +324,4 @@ def query_stream():
 @token_required
 def list_models():
     """List available LLM models grouped by provider."""
-    return jsonify(LLMService.get_available_models())
+    return jsonify(current_app.extensions['llm_service'].get_available_models())

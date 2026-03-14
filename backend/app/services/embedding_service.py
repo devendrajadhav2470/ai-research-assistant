@@ -14,24 +14,15 @@ logger = logging.getLogger(__name__)
 class EmbeddingService:
     """Generates embeddings using a local SentenceTransformer model."""
 
-    # _instance = None
     _model = None
 
-    # def __new__(cls, *args, **kwargs):
-    #     """Singleton to avoid loading the model multiple times."""
-    #     logger.info(f"someone asked for a EmeddingService instance")
-    #     if cls._instance is None:
-    #         cls._instance = super().__new__(cls)
-    #         logger.info(f"EmbeddingService object created")
-    #     return cls._instance
-
-    def __init__(self, model_name: str = None):
+    def __init__(self,device: str, model_name: str = None):
         if self._model is None:
             self.model_name = model_name or Config.EMBEDDING_MODEL_NAME
             logger.info(f"loading the HuggingFaceEmbeddings model: {self.model_name} with normalize_embeddings set to True")
             self._model = HuggingFaceEmbeddings(
                 model_name=self.model_name,
-                encode_kwargs={"normalize_embeddings": True,"device": current_app.extensions["device"]}
+                encode_kwargs={"normalize_embeddings": True,"device": device}
             )
             if self._model:
                 logger.info(f"successfully loaded the model")

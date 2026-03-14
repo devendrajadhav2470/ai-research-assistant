@@ -9,7 +9,8 @@ import chromadb
 import logging 
 from app.services.document_processor import DocumentProcessor
 from app.services.embedding_service import EmbeddingService
-
+from app.services.llm_service import LLMService
+from app.services.evaluation_service import EvaluationService
 def create_app(config_class=Config):
     """Create and configure the Flask application."""
     app = Flask(__name__)
@@ -27,10 +28,12 @@ def create_app(config_class=Config):
 
     # Initialize chroma db client 
     app.extensions['chroma_client'] = chromadb.HttpClient(host="localhost",port=8000) 
-
+    app.extensions['device'] = "cpu"
     app.extensions['s3'] = boto3.client("s3")
     app.extensions['embedding_service'] = EmbeddingService(device='cpu')
     app.extensions['document_processor'] = DocumentProcessor(app.extensions['embedding_service'])
+    app.extensions['llm_service'] = LLMService()
+    app.extensions['evaluation_service'] = EvaluationService(app.extensions['llm_service'])
     # Register blueprints first so limiter can discover routes
     from app.api.documents import documents_bp
     from app.api.collections import collections_bp

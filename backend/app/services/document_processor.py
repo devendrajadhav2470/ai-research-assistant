@@ -16,6 +16,7 @@ from PIL import Image
 import fitz  # PyMuPDF
 
 from app.config import Config
+from app.services.embedding_service import EmbeddingService
 
 logger = logging.getLogger(__name__)
 
@@ -26,13 +27,12 @@ class DocumentProcessor:
 
     def __init__(
         self,
+        embedding_service: EmbeddingService,
         chunk_size: int = None,
-        chunk_overlap: int = None,
+        chunk_overlap: int = None
     ):
         self.chunk_size = chunk_size or Config.CHUNK_SIZE
         self.chunk_overlap = chunk_overlap or Config.CHUNK_OVERLAP
-
-        embedding_service = current_app.extensions['embedding_service']
         self.embeddings = embedding_service.get_embedding_model()
 
         self.chunker = SemanticChunker(

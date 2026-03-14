@@ -10,7 +10,7 @@ from app.services.utils.format_context import format_context
 logger = logging.getLogger(__name__)
 
 EVALUATION_SYSTEM_PROMPT = """You are an expert evaluator assessing the quality of AI-generated answers 
-based on retrieved context from research papers and documents.
+based on retrieved context from documents.
 
 You must evaluate the answer on four dimensions and return a JSON object with scores and explanations.
 
@@ -63,8 +63,8 @@ Please evaluate the generated answer based on the question and retrieved context
 class EvaluationService:
     """Evaluates RAG answer quality using LLM-as-a-Judge."""
 
-    def __init__(self, llm_service: LLMService = None):
-        self.llm_service = llm_service or LLMService()
+    def __init__(self, llm_service: LLMService):
+        self.llm_service = llm_service
 
     def evaluate(
         self,
