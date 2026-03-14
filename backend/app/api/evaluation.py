@@ -10,6 +10,7 @@ from app.services.chat_service import ChatService
 from app.services.retriever import HybridRetriever
 from app.api.auth import token_required
 from app.extensions import limiter
+from app.config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +56,9 @@ def evaluate_message(message_id):
     collection_id = conversation.collection_id
 
     data = request.get_json() or {}
-    provider = data.get("provider")
-    model_name = data.get("model_name")
+    # TO DO: validate the provider and model_name
+    provider = data.get("provider") or Config.EVALUATOR_MODEL_PROVIDER
+    model_name = data.get("model_name") or Config.EVALUATOR_MODEL_NAME
 
     # Re-retrieve chunks for evaluation context
     retriever = HybridRetriever()

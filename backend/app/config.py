@@ -13,14 +13,15 @@ class Config:
     # Flask
     SECRET_KEY = os.getenv("SECRET_KEY")
     DEBUG = os.getenv("FLASK_DEBUG", "0") == "1"
-
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
     # Database
     SQLALCHEMY_DATABASE_URI = f"postgresql://postgres:{os.getenv("POSTGRES_PASSWORD")}@{os.getenv("POSTGRES_ADDRESS")}/bookragdb"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+
     # File uploads
     UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "./data/uploads")
-    
+
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50 MB max upload
     MAX_QUESTION_LENGTH = int(os.getenv("MAX_QUESTION_LENGTH"))
 
@@ -30,6 +31,9 @@ class Config:
     # Reranker model
     RERANKER_MODEL_NAME = os.getenv("RERANKER_MODEL_NAME")
 
+    #
+    EVALUATOR_MODEL_NAME = os.getenv("EVALUATOR_MODEL_NAME")
+    EVALUATOR_MODEL_PROVIDER = os.getenv("EVALUATOR_MODEL_PROVIDER")
     # LLM providers
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
     ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
