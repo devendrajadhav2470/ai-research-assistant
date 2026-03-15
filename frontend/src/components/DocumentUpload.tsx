@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import clsx from 'clsx';
 import { useDropzone } from 'react-dropzone';
 import {
   Upload,
@@ -46,9 +47,9 @@ export default function DocumentUpload({
     onDrop: (acceptedFiles) => {
       acceptedFiles.forEach((file) => onUpload(file));
     },
-    accept: { 'application/pdf': ['.pdf']},
+    accept: { 'application/pdf': ['.pdf'] },
     disabled: uploading,
-    maxSize: 50 * 1024 * 1024, // 50 MB
+    maxSize: 50 * 1024 * 1024,
     multiple: true,
   });
 
@@ -57,19 +58,21 @@ export default function DocumentUpload({
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/40 sidebar-overlay flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-modal w-full max-w-2xl max-h-[85vh] flex flex-col animate-fade-in overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Manage Documents</h2>
-            <p className="text-sm text-gray-500">Collection: {collectionName}</p>
+            <h2 className="text-lg font-bold text-text-primary">Manage Documents</h2>
+            <p className="text-sm text-text-secondary mt-0.5">
+              Collection: <span className="font-medium text-primary-600">{collectionName}</span>
+            </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
           >
-            <X size={20} />
+            <X size={18} className="text-text-secondary" />
           </button>
         </div>
 
@@ -77,35 +80,40 @@ export default function DocumentUpload({
         <div className="p-6">
           <div
             {...getRootProps()}
-            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+            className={clsx(
+              'border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all',
               isDragActive
-                ? 'border-indigo-500 bg-indigo-50'
+                ? 'border-primary-400 bg-primary-50'
                 : uploading
                 ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                : 'border-gray-300 hover:border-indigo-400 hover:bg-gray-50'
-            }`}
+                : 'border-gray-200 hover:border-primary-300 hover:bg-primary-50/30'
+            )}
           >
             <input {...getInputProps()} />
             {uploading ? (
-              <div className="flex flex-col items-center gap-2">
-                <Loader2 size={36} className="text-indigo-500 animate-spin" />
-                <p className="text-sm text-gray-600">{uploadProgress || 'Processing...'}</p>
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 size={36} className="text-primary-500 animate-spin" />
+                <p className="text-sm text-text-secondary">{uploadProgress || 'Processing...'}</p>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-2">
-                <Upload size={36} className="text-gray-400" />
-                <p className="text-sm font-medium text-gray-700">
-                  {isDragActive
-                    ? 'Drop your PDF files here...'
-                    : 'Drag & drop PDF files here, or click to browse'}
-                </p>
-                <p className="text-xs text-gray-400">Supports PDF files up to 50 MB</p>
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center">
+                  <Upload size={24} className="text-primary-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-text-primary">
+                    {isDragActive
+                      ? 'Drop your PDF files here...'
+                      : 'Drag & drop PDF files here, or click to browse'}
+                  </p>
+                  <p className="text-xs text-text-secondary mt-1">Supports PDF files up to 50 MB</p>
+                </div>
               </div>
             )}
           </div>
 
           {error && (
-            <div className="mt-3 flex items-center gap-2 text-sm text-red-600 bg-red-50 px-4 py-2 rounded-lg">
+            <div className="mt-3 flex items-center gap-2 text-sm text-red-600 bg-red-50 px-4 py-2.5 rounded-xl">
               <AlertCircle size={16} />
               {error}
             </div>
@@ -114,30 +122,32 @@ export default function DocumentUpload({
 
         {/* Document List */}
         <div className="flex-1 overflow-y-auto px-6 pb-6">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+          <h3 className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-3">
             Uploaded Documents ({documents.length})
           </h3>
           <div className="space-y-2">
             {documents.map((doc) => (
               <div
                 key={doc.id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg group"
+                className="group flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100/80 transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <FileText size={20} className="text-indigo-500 flex-shrink-0" />
+                  <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
+                    <FileText size={18} className="text-primary-500" />
+                  </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">
+                    <p className="text-sm font-medium text-text-primary truncate">
                       {doc.filename}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-text-secondary">
                       {formatFileSize(doc.file_size)} &middot; {doc.page_count} pages &middot;{' '}
                       {doc.chunk_count} chunks
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   {doc.status === 'ready' && (
-                    <CheckCircle2 size={16} className="text-green-500" />
+                    <CheckCircle2 size={16} className="text-emerald-500" />
                   )}
                   {doc.status === 'processing' && (
                     <Loader2 size={16} className="text-amber-500 animate-spin" />
@@ -149,16 +159,16 @@ export default function DocumentUpload({
                   )}
                   <button
                     onClick={() => onDelete(doc.id)}
-                    className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-red-100 rounded transition-all"
+                    className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-red-50 rounded-lg transition-all"
                     title="Delete document"
                   >
-                    <Trash2 size={14} className="text-red-500" />
+                    <Trash2 size={14} className="text-red-400" />
                   </button>
                 </div>
               </div>
             ))}
             {documents.length === 0 && (
-              <p className="text-sm text-gray-400 text-center py-4">
+              <p className="text-sm text-text-secondary text-center py-6">
                 No documents uploaded yet. Drop a PDF above to get started.
               </p>
             )}
@@ -168,4 +178,3 @@ export default function DocumentUpload({
     </div>
   );
 }
-
