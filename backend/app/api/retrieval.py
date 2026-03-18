@@ -4,7 +4,7 @@ import logging
 from flask import Blueprint, jsonify,request, g
 from app.services.retriever import HybridRetriever
 from app.extensions import db
-from app.models.document import Collection
+from app.models.document import Collection, Chunk, Document
 from app.config import Config
 from app.api.auth import token_required
 from app.extensions import limiter
@@ -43,3 +43,21 @@ def get_chunks():
     retrieval_service = HybridRetriever()
     chunks = retrieval_service.retrieve(collection_id = collection_id, query = question)
     return jsonify(chunks)
+
+@retrieval_bp.route("/stats/<int:collection_id>", methods=["GET"])
+@limiter.limit("60 per minute")
+@token_required
+def get_collection_stats(collection_id):
+    # validate collection id 
+    collection = db.session.get(Collection, collection_id)
+    if not collection or not collection.user_id==g.user['id']:
+        return jsonify({"error": "Collection not found for the current user"}), 404    
+    
+    # number of chunks in the collection 
+    chunks_count = Chunk.query.filter_by(collection_id = collection_id).count()
+    docs = Document.query.filter_by(collection_id = collection_id).all()
+    
+    return jsonify({
+        "chunks_count": chunks_count,
+        "documents": [doc.filename for doc in docs]
+    })
