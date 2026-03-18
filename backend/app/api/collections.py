@@ -50,7 +50,7 @@ def create_collection():
 def get_collection(collection_id):
     """Get a specific collection."""
     collection = db.session.get(Collection, collection_id)
-    if not collection or not collection.user_id!=g.user['id']:
+    if not collection or not collection.user_id==g.user['id']:
         return jsonify({"error": "Collection not found for the current user"}), 404
     return jsonify(collection.to_dict())
 
@@ -61,7 +61,7 @@ def get_collection(collection_id):
 def update_collection(collection_id):
     """Update a collection."""
     collection = db.session.get(Collection, collection_id)
-    if not collection or not collection.user_id!=g.user['id']:
+    if not collection or not collection.user_id==g.user['id']:
         return jsonify({"error": "Collection not found for the current user"}), 404
 
     data = request.get_json()
@@ -80,7 +80,7 @@ def update_collection(collection_id):
 def delete_collection(collection_id):
     """Delete a collection and all associated data."""
     collection = db.session.get(Collection, collection_id)
-    if not collection or not collection.user_id!=g.user['id']:
+    if not collection or not collection.user_id==g.user['id']:
         return jsonify({"error": "Collection not found for the current user"}), 404
 
     # Clean up vector indices

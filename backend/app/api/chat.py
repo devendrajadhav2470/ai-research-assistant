@@ -25,7 +25,7 @@ chat_bp = Blueprint("chat", __name__)
 def list_conversations(collection_id):
     """List all conversations in a collection."""
     collection = db.session.get(Collection, collection_id)
-    if not collection or not collection.user_id!=g.user['id']:
+    if not collection or not collection.user_id==g.user['id']:
         return jsonify({"error": "Collection not found for the current user"}), 404
 
     chat_service = ChatService()
@@ -45,7 +45,7 @@ def create_conversation():
         return jsonify({"error": "collection_id is required"}), 400
 
     collection = db.session.get(Collection, data["collection_id"])
-    if not collection or not collection.user_id!=g.user['id']:
+    if not collection or not collection.user_id==g.user['id']:
         return jsonify({"error": "Collection not found for the current user"}), 404
 
     chat_service = ChatService()
@@ -70,7 +70,7 @@ def get_conversation(conversation_id):
     chat_service = ChatService()
     conversation = chat_service.get_conversation(conversation_id)
 
-    if not conversation or not conversation.user_id!=g.user['id']:
+    if not conversation or not conversation.user_id==g.user['id']:
         return jsonify({"error": "Conversation not found for the current user"}), 404
 
     messages = chat_service.get_conversation_messages(conversation_id, limit+1, before_id)
@@ -103,7 +103,7 @@ def update_conversation(conversation_id):
         return jsonify({"error": "title is required"}), 400
     chat_service = ChatService()
     conversation = chat_service.get_conversation(conversation_id)
-    if not conversation or not conversation.user_id!=g.user['id']:
+    if not conversation or not conversation.user_id==g.user['id']:
         return jsonify({"error": "Conversation not found for the current user"}), 404
     conversation = chat_service.update_conversation(conversation_id, data)
     if not conversation:
@@ -117,7 +117,7 @@ def delete_conversation(conversation_id):
     """Delete a conversation."""
     chat_service = ChatService()
     conversation = chat_service.get_conversation(conversation_id)
-    if not conversation or not conversation.user_id!=g.user['id']:
+    if not conversation or not conversation.user_id==g.user['id']:
         return jsonify({"error": "Conversation not found for the current user"}), 404
     if chat_service.delete_conversation(conversation_id):
         return jsonify({"message": "Conversation deleted"})
@@ -160,7 +160,7 @@ def query():
         return jsonify({"error": "collection_id is required"}), 400
 
     collection = db.session.get(Collection, collection_id)
-    if not collection or not collection.user_id!=g.user['id']:
+    if not collection or not collection.user_id==g.user['id']:
         return jsonify({"error": "Collection not found for the current user"}), 404
 
     conversation_id = data.get("conversation_id")
@@ -253,7 +253,7 @@ def query_stream():
         return jsonify({"error": "collection_id is required"}), 400
 
     collection = db.session.get(Collection, collection_id)
-    if not collection or not collection.user_id!=g.user['id']:
+    if not collection or not collection.user_id==g.user['id']:
         return jsonify({"error": "Collection not found for the current user"}), 404
 
     conversation_id = data.get("conversation_id")

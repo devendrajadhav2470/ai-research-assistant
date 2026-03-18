@@ -35,7 +35,7 @@ def evaluate_message(message_id):
     if not message:
         return jsonify({"error": "Message not found"}), 404
     conversation = db.session.get(Conversation,message.conversation_id)
-    if not conversation or not conversation.user_id!=g.user['id']:
+    if not conversation or not conversation.user_id==g.user['id']:
         return jsonify({"error": "Conversation not found for the current user"}), 404
     logger.debug("evaluate_message message: %s", message)
     if message.role != "assistant":
@@ -99,7 +99,7 @@ def get_evaluation(message_id):
     if not message:
         return jsonify({"error": "Message not found"}), 404
     conversation = db.session.get(Conversation,message.conversation_id)
-    if not conversation or not conversation.user_id!=g.user['id']:
+    if not conversation or not conversation.user_id==g.user['id']:
         return jsonify({"error": "Conversation not found for the current user"}), 404
     return jsonify({
         "message_id": message_id,

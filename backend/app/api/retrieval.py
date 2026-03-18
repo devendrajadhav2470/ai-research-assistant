@@ -30,7 +30,7 @@ def get_chunks():
     
     # validate collection id 
     collection = db.session.get(Collection, collection_id)
-    if not collection or not collection.user_id!=g.user['id']:
+    if not collection or not collection.user_id==g.user['id']:
         return jsonify({"error": "Collection not found for the current user"}), 404    
     
     question = request_data.get("question", "").strip()
