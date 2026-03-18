@@ -18,8 +18,8 @@ collections_bp = Blueprint("collections", __name__)
 @limiter.limit("60 per minute")
 @token_required
 def list_collections():
-    """List all collections."""
-    collections = Collection.query.order_by(Collection.created_at.desc()).all()
+    """List all collections of the current user"""
+    collections = Collection.query.filter_by(user_id=g.user['id']).order_by(Collection.created_at.desc()).all()
     return jsonify([c.to_dict() for c in collections])
 
 
@@ -29,7 +29,6 @@ def list_collections():
 def create_collection():
     """Create a new collection."""
     data = request.get_json()
-    vector_store = VectorStore()
     if not data or not data.get("name"):
         return jsonify({"error": "Name is required"}), 400
 
@@ -51,8 +50,8 @@ def create_collection():
 def get_collection(collection_id):
     """Get a specific collection."""
     collection = db.session.get(Collection, collection_id)
-    if not collection:
-        return jsonify({"error": "Collection not found"}), 404
+    if not collection or not collection.user_id!=g.user['id']:
+        return jsonify({"error": "Collection not found for the current user"}), 404
     return jsonify(collection.to_dict())
 
 
@@ -62,8 +61,8 @@ def get_collection(collection_id):
 def update_collection(collection_id):
     """Update a collection."""
     collection = db.session.get(Collection, collection_id)
-    if not collection:
-        return jsonify({"error": "Collection not found"}), 404
+    if not collection or not collection.user_id!=g.user['id']:
+        return jsonify({"error": "Collection not found for the current user"}), 404
 
     data = request.get_json()
     if data.get("name"):
@@ -81,8 +80,8 @@ def update_collection(collection_id):
 def delete_collection(collection_id):
     """Delete a collection and all associated data."""
     collection = db.session.get(Collection, collection_id)
-    if not collection:
-        return jsonify({"error": "Collection not found"}), 404
+    if not collection or not collection.user_id!=g.user['id']:
+        return jsonify({"error": "Collection not found for the current user"}), 404
 
     # Clean up vector indices
     try:

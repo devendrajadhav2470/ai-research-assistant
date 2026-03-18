@@ -1,7 +1,7 @@
 """Config API endpoints"""
 
 import logging
-from flask import Blueprint, jsonify,request
+from flask import Blueprint, jsonify,request, g
 from app.services.retriever import HybridRetriever
 from app.extensions import db
 from app.models.document import Collection
@@ -30,9 +30,8 @@ def get_chunks():
     
     # validate collection id 
     collection = db.session.get(Collection, collection_id)
-    
-    if not collection:
-        return jsonify({"error": "collection not found"}), 404
+    if not collection or not collection.user_id!=g.user['id']:
+        return jsonify({"error": "Collection not found for the current user"}), 404    
     
     question = request_data.get("question", "").strip()
     question = re.sub(r"\s+", " ", question)

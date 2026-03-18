@@ -1,10 +1,10 @@
 """Evaluation API endpoints."""
 
 import logging
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 
 from app.extensions import db
-from app.models.chat import Message
+from app.models.chat import Message, Conversation
 from app.services.rag_pipeline import RAGPipeline
 from app.services.chat_service import ChatService
 from app.services.retriever import HybridRetriever
@@ -34,7 +34,9 @@ def evaluate_message(message_id):
     message = db.session.get(Message, message_id)
     if not message:
         return jsonify({"error": "Message not found"}), 404
-
+    conversation = db.session.get(Conversation,message.conversation_id)
+    if not conversation or not conversation.user_id!=g.user['id']:
+        return jsonify({"error": "Conversation not found for the current user"}), 404
     logger.debug("evaluate_message message: %s", message)
     if message.role != "assistant":
         return jsonify({"error": "Can only evaluate assistant messages"}), 400
@@ -96,7 +98,9 @@ def get_evaluation(message_id):
     message = db.session.get(Message, message_id)
     if not message:
         return jsonify({"error": "Message not found"}), 404
-
+    conversation = db.session.get(Conversation,message.conversation_id)
+    if not conversation or not conversation.user_id!=g.user['id']:
+        return jsonify({"error": "Conversation not found for the current user"}), 404
     return jsonify({
         "message_id": message_id,
         "evaluation": message.evaluation,
