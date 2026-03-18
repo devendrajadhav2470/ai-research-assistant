@@ -41,3 +41,5 @@ Thumbs.db
 # Model cache
 .cache/
 
+rag-dataset/
+100-llm-papers-dataset/
