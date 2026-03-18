@@ -216,8 +216,7 @@ def upload_document(collection_id):
         chunk_ids = []
         for chunk_data in result["chunks"]:
 
-            raw_chunk_id =f"{chunk_data["metadata"]["source"]}::{chunk_data["chunk_index"]}::{chunk_data["content"]}".encode("utf-8")
-            chunk_id =  hashlib.sha256(raw_chunk_id).hexdigest()
+            chunk_id = str(uuid.uuid4())
             chunk_tokens = tokenize(chunk_data["content"])
             chunk_ids.append(chunk_id)
             chunk = Chunk(
