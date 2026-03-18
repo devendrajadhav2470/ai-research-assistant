@@ -77,7 +77,7 @@ class DocumentProcessor:
                 for i, page in enumerate(reader.pages):
                     text = page.extract_text() or ""
                     text = text.strip()
-
+                    text = text.replace("\x00","")
                     if text:
                         pages.append({
                             "page_number": i + 1,
