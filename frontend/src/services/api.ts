@@ -98,33 +98,11 @@ export async function getDocuments(collectionId: number): Promise<Document[]> {
 export async function uploadDocument(collectionId: number, file: File): Promise<Document> {
   const formData = new FormData();
   formData.append('file', file);
-  const {data} = await api.post(`/documents/upload_url/${collectionId}`, formData, {
+  const {data} = await api.post(`/documents/upload/${collectionId}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
-  const upload_url = data["presigned_upload_put_url"] 
-
-  const res = await fetch(upload_url,{
-    method: "PUT",
-    body: file,
-    headers: file.type ? {"Content-Type": file.type} : undefined
-  })
-  if(!res.ok){
-    const text = await res.text().catch(()=>"");
-    throw new Error(`Upload failed: ${res.status} ${res.statusText} ${res.text}`);
-  }
-  // temporary return of type Document
-  return {
-    id: 1,
-    collection_id: collectionId,
-    filename: file.name,
-    file_size: file.size,
-    page_count: 1,
-    chunk_count: 1,
-    status: 'processing',
-    error_message: null,
-    created_at: new Date().toISOString(),
-  };
   
+  return data;
 
 }
 
@@ -211,7 +189,7 @@ export function queryRAGStream(
 
   fetch(`${API_BASE}/chat/query/stream`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'GuestUserSessionId': String(sessionId)},
     body: JSON.stringify({
       question,
       collection_id: collectionId,

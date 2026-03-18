@@ -1,7 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { User, Bot } from 'lucide-react';
-import type { Message, Citation, Evaluation } from '../types';
+import clsx from 'clsx';
+import {
+  User,
+  Sparkles,
+  Copy,
+  Check,
+  RefreshCw,
+  ThumbsUp,
+  ThumbsDown,
+} from 'lucide-react';
+import type { Message } from '../types';
 import CitationCard from './CitationCard';
 import EvaluationBadge from './EvaluationBadge';
 
@@ -9,48 +18,130 @@ interface MessageBubbleProps {
   message: Message;
   onEvaluate: (messageId: number) => void;
   isEvaluating?: boolean;
+  onResend?: (content: string) => void;
 }
 
-export default function MessageBubble({ message, onEvaluate, isEvaluating }: MessageBubbleProps) {
+export default function MessageBubble({
+  message,
+  onEvaluate,
+  isEvaluating,
+  onResend,
+}: MessageBubbleProps) {
   const isUser = message.role === 'user';
+  const [copied, setCopied] = useState(false);
+  const [liked, setLiked] = useState<'up' | 'down' | null>(null);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard not available
+    }
+  };
+
+  const handleRegenerate = () => {
+    if (!onResend) return;
+    onResend(message.content);
+  };
 
   return (
-    <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
+    <div
+      className={clsx(
+        'flex gap-3 animate-fade-in',
+        isUser ? 'flex-row-reverse' : ''
+      )}
+    >
       {/* Avatar */}
       <div
-        className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-          isUser ? 'bg-indigo-600' : 'bg-gray-700'
-        }`}
+        className={clsx(
+          'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
+          isUser ? 'bg-primary-500' : 'bg-gray-800'
+        )}
       >
         {isUser ? (
-          <User size={16} className="text-white" />
+          <User size={14} className="text-white" />
         ) : (
-          <Bot size={16} className="text-white" />
+          <Sparkles size={14} className="text-white" />
         )}
       </div>
 
       {/* Content */}
-      <div className={`flex-1 max-w-[80%] ${isUser ? 'text-right' : ''}`}>
+      <div className={clsx('flex-1 max-w-[85%]', isUser ? 'text-right' : '')}>
+        {/* Role label */}
+        {!isUser && (
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <span className="text-xs font-semibold text-text-primary">CHAT A.I +</span>
+            <span className="inline-flex items-center gap-0.5 text-[10px] text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full font-medium">
+              <Sparkles size={8} />
+              AI
+            </span>
+          </div>
+        )}
+
+        {/* Message bubble */}
         <div
-          className={`inline-block text-left rounded-2xl px-4 py-3 ${
+          className={clsx(
+            'inline-block text-left px-4 py-3 text-sm leading-relaxed',
             isUser
-              ? 'bg-indigo-600 text-white rounded-tr-md'
-              : 'bg-white border border-gray-200 text-gray-800 rounded-tl-md shadow-sm'
-          }`}
+              ? 'bg-primary-500 text-white rounded-bubble rounded-tr-lg'
+              : 'bg-white border border-gray-100 text-text-primary rounded-bubble rounded-tl-lg shadow-card'
+          )}
         >
           {isUser ? (
-            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+            <p className="whitespace-pre-wrap">{message.content}</p>
           ) : (
-            <div className="prose prose-sm max-w-none text-sm">
+            <div className="prose prose-sm max-w-none">
               <ReactMarkdown>{message.content}</ReactMarkdown>
             </div>
           )}
         </div>
 
+        {/* Actions bar for assistant messages */}
+        {!isUser && (
+          <div className="flex items-center gap-1 mt-2 flex-wrap">
+            <ActionButton
+              icon={copied ? Check : Copy}
+              label={copied ? 'Copied' : 'Copy'}
+              onClick={handleCopy}
+              active={copied}
+            />
+            <ActionButton
+              icon={RefreshCw}
+              label="Regenerate"
+              onClick={handleRegenerate}
+            />
+            <div className="w-px h-4 bg-gray-200 mx-1" />
+            <ActionButton
+              icon={ThumbsUp}
+              label=""
+              onClick={() => setLiked(liked === 'up' ? null : 'up')}
+              active={liked === 'up'}
+            />
+            <ActionButton
+              icon={ThumbsDown}
+              label=""
+              onClick={() => setLiked(liked === 'down' ? null : 'down')}
+              active={liked === 'down'}
+            />
+
+            {/* Model info */}
+            {message.model_name && (
+              <>
+                <div className="w-px h-4 bg-gray-200 mx-1" />
+                <span className="text-[10px] text-gray-400 px-1">
+                  {message.provider}/{message.model_name}
+                </span>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Citations */}
         {!isUser && message.citations && message.citations.length > 0 && (
-          <div className="mt-2 space-y-1.5 max-w-[80%]">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+          <div className="mt-3 space-y-1.5">
+            <p className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider">
               Sources
             </p>
             {message.citations.map((citation, idx) => (
@@ -68,15 +159,34 @@ export default function MessageBubble({ message, onEvaluate, isEvaluating }: Mes
             isEvaluating={isEvaluating}
           />
         )}
-
-        {/* Metadata */}
-        {!isUser && message.model_name && (
-          <p className="mt-1 text-xs text-gray-400">
-            {message.provider}/{message.model_name}
-          </p>
-        )}
       </div>
     </div>
   );
 }
 
+function ActionButton({
+  icon: Icon,
+  label,
+  onClick,
+  active,
+}: {
+  icon: React.ElementType;
+  label: string;
+  onClick: () => void;
+  active?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={clsx(
+        'inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium transition-colors',
+        active
+          ? 'text-primary-600 bg-primary-50'
+          : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+      )}
+    >
+      <Icon size={12} />
+      {label && <span>{label}</span>}
+    </button>
+  );
+}

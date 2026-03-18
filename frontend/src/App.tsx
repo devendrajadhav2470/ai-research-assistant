@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import Header from './components/Header';
-import CollectionSidebar from './components/CollectionSidebar';
+import { Menu } from 'lucide-react';
+import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
 import DocumentUpload from './components/DocumentUpload';
 import { useCollections } from './hooks/useCollections';
@@ -11,20 +11,16 @@ import BackendUnhealthyBanner from './components/BackendUnhealthyBanner';
 import { BackendStatus } from './types';
 
 export default function App() {
-  // Model selection
   const [selectedProvider, setSelectedProvider] = useState('groq');
   const [selectedModel, setSelectedModel] = useState('llama-3.3-70b-versatile');
-
-  // Document upload modal
   const [showDocuments, setShowDocuments] = useState(false);
-
-  // Backend status
-  const [backendStatus, setBackendStatus] = useState<BackendStatus>({ status: 'unhealthy', service: 'backend' });
-
-  // Evaluation state
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>({
+    status: 'unhealthy',
+    service: 'backend',
+  });
   const [evaluatingId, setEvaluatingId] = useState<number | null>(null);
 
-  // Collections
   const {
     collections,
     activeCollection,
@@ -33,7 +29,6 @@ export default function App() {
     removeCollection,
   } = useCollections();
 
-  // Documents
   const {
     documents,
     uploading,
@@ -44,7 +39,6 @@ export default function App() {
     removeDocument,
   } = useDocuments(activeCollection?.id ?? null);
 
-  // Chat
   const {
     conversations,
     activeConversation,
@@ -53,8 +47,8 @@ export default function App() {
     streamingCitations,
     isStreaming,
     loading: chatLoading,
-    loadingMessages: loadingMessages,
-    hasMoreMessages: hasMoreMessages,
+    loadingMessages,
+    hasMoreMessages,
     error: chatError,
     fetchConversations,
     loadConversation,
@@ -63,18 +57,13 @@ export default function App() {
     sendMessage,
     stopStreaming,
     removeConversation,
-    updateConversationTitle
+    updateConversationTitle,
   } = useChat(activeCollection?.id ?? null);
 
-  // Fetch conversations when collection changes
-
-
-
   useEffect(() => {
-    getBackendStatus().then((status) => {
-      setBackendStatus(status);
-    });
+    getBackendStatus().then((status) => setBackendStatus(status));
   }, []);
+
   useEffect(() => {
     if (activeCollection) {
       fetchConversations();
@@ -82,54 +71,48 @@ export default function App() {
     }
   }, [activeCollection?.id]);
 
-  // Handle model change
   const handleModelChange = useCallback((provider: string, model: string) => {
     setSelectedProvider(provider);
     setSelectedModel(model);
   }, []);
 
-  // Handle send message with model selection
   const handleSendMessage = useCallback(
     (question: string) => {
       sendMessage(question, selectedProvider, selectedModel);
     },
-    [sendMessage, selectedProvider, selectedModel],
+    [sendMessage, selectedProvider, selectedModel]
   );
 
-  // Handle evaluate message
   const handleEvaluate = useCallback(
     async (messageId: number) => {
       try {
         setEvaluatingId(messageId);
         await evaluateMessage(messageId, selectedProvider, selectedModel);
-        // Reload conversation to get updated evaluation
         if (activeConversation) {
           loadConversation(activeConversation.id);
         }
       } catch {
-        console.error("Error evaluating message");
+        console.error('Error evaluating message');
       } finally {
         setEvaluatingId(null);
       }
     },
-    [selectedProvider, selectedModel, activeConversation, loadConversation],
+    [selectedProvider, selectedModel, activeConversation, loadConversation]
   );
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col bg-page overflow-hidden">
       <BackendUnhealthyBanner status={backendStatus} />
-      <Header
-        selectedProvider={selectedProvider}
-        selectedModel={selectedModel}
-        onModelChange={handleModelChange}
-      />
 
       <div className="flex-1 flex overflow-hidden">
-        <CollectionSidebar
+        {/* Sidebar */}
+        <Sidebar
           collections={collections}
           activeCollection={activeCollection}
           conversations={conversations}
           activeConversationId={activeConversation?.id ?? null}
+          selectedProvider={selectedProvider}
+          selectedModel={selectedModel}
           onSelectCollection={setActiveCollection}
           onCreateCollection={createCollection}
           onDeleteCollection={removeCollection}
@@ -138,24 +121,41 @@ export default function App() {
           onDeleteConversation={removeConversation}
           onEditConversation={updateConversationTitle}
           onOpenDocuments={() => setShowDocuments(true)}
+          onModelChange={handleModelChange}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
         />
 
-        <ChatInterface
-          messages={messages}
-          streamingContent={streamingContent}
-          streamingCitations={streamingCitations}
-          isStreaming={isStreaming}
-          loading={chatLoading}
-          loadingMessages={loadingMessages}
-          hasMoreMessages={hasMoreMessages}
-          error={chatError}
-          collectionName={activeCollection?.name ?? null}
-          onSendMessage={handleSendMessage}
-          onStopStreaming={stopStreaming}
-          onEvaluate={handleEvaluate}
-          onLoadMoreMessages={loadConversationMessages}
-          evaluatingId={evaluatingId}
-        />
+        {/* Main content */}
+        <main className="flex-1 flex flex-col min-w-0">
+          {/* Mobile top bar */}
+          <div className="lg:hidden flex items-center gap-3 px-4 py-2.5 bg-white border-b border-border">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+            >
+              <Menu size={20} className="text-text-primary" />
+            </button>
+            <span className="text-sm font-bold text-text-primary">CHAT A.I+</span>
+          </div>
+
+          <ChatInterface
+            messages={messages}
+            streamingContent={streamingContent}
+            streamingCitations={streamingCitations}
+            isStreaming={isStreaming}
+            loading={chatLoading}
+            loadingMessages={loadingMessages}
+            hasMoreMessages={hasMoreMessages}
+            error={chatError}
+            collectionName={activeCollection?.name ?? null}
+            onSendMessage={handleSendMessage}
+            onStopStreaming={stopStreaming}
+            onEvaluate={handleEvaluate}
+            onLoadMoreMessages={loadConversationMessages}
+            evaluatingId={evaluatingId}
+          />
+        </main>
       </div>
 
       {/* Document Upload Modal */}
@@ -175,4 +175,3 @@ export default function App() {
     </div>
   );
 }
-

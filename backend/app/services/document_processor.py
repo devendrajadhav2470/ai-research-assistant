@@ -7,9 +7,12 @@ from readability import Document as ReadabilityDocument  # pyright: ignore[repor
 from docx import Document as DocxDocument
 from pypdf import PdfReader
 from langchain_experimental.text_splitter import SemanticChunker
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from werkzeug.datastructures import FileStorage
 from flask import current_app
-
+import hashlib
+import re
+import unicodedata
 from bs4 import BeautifulSoup
 import io
 from PIL import Image
@@ -29,18 +32,33 @@ class DocumentProcessor:
         self,
         embedding_service: EmbeddingService,
         chunk_size: int = None,
-        chunk_overlap: int = None
+        chunk_overlap: int = None,
+        chunking_strategy: str = None
     ):
         self.chunk_size = chunk_size or Config.CHUNK_SIZE
         self.chunk_overlap = chunk_overlap or Config.CHUNK_OVERLAP
         self.embeddings = embedding_service.get_embedding_model()
-
-        self.chunker = SemanticChunker(
-            embeddings=self.embeddings,
-            breakpoint_threshold_type="percentile",  # default
-            breakpoint_threshold_amount=95,          # default for percentile
-        )
-
+        self.chunker = None
+        if(chunking_strategy=='semantic'):
+            self.chunker = SemanticChunker(
+                embeddings=self.embeddings,
+                breakpoint_threshold_type="percentile",  # default
+                breakpoint_threshold_amount=95,          # default for percentile
+            )
+        else:
+            self.chunker = RecursiveCharacterTextSplitter(
+                separators = ["\n\n", "\n", ".", " ", ""],
+                chunk_size = self.chunk_size,
+                chunk_overlap = self.chunk_overlap
+            )
+    def normalize_text(self, text: str) -> str:
+        text = unicodedata.normalize("NFKC",text)
+        text = text.casefold()
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
+    def text_hash(self, text: str, algo='sha256') -> str:
+        normalized = self.normalize_text(text)
+        return hashlib.new(algo, normalized.encode("utf-8")).hexdigest()
     def extract_text_from_document(self, file: FileStorage, filename: str) -> List[Dict[str, Any]]:
         """
         Extract text from a file, page by page.
@@ -59,6 +77,7 @@ class DocumentProcessor:
                 for i, page in enumerate(reader.pages):
                     text = page.extract_text() or ""
                     text = text.strip()
+
                     if text:
                         pages.append({
                             "page_number": i + 1,
@@ -68,7 +87,19 @@ class DocumentProcessor:
                 logger.info(
                     f"Extracted text from {len(pages)} pages of {filename}"
                 )
-            
+            elif ext == ".txt":
+                file.seek(0)
+                raw = file.stream.read()
+                text = raw.decode("utf-8") if isinstance(raw, bytes) else raw
+                text = text.strip()
+                pages.append({
+                    "page_number": 1,
+                    "text": text
+                })
+                
+                logger.info(
+                    f"Extracted text from {len(pages)} pages of {filename}"
+                )
             else:
                 raise ValueError(f"Unsupported file extension: {ext}")
         except Exception as e:
@@ -100,8 +131,16 @@ class DocumentProcessor:
 
             # Split page text into chunks
             page_chunks = self.chunker.split_text(text)
+            chunk_hash_set = set()
 
             for chunk_text in page_chunks:
+                if len(chunk_text.strip())==0:
+                    # empty chunk
+                    continue
+                chunk_hash = self.text_hash(chunk_text)
+                if chunk_hash in chunk_hash_set:
+                    continue
+                chunk_hash_set.add(chunk_hash)
                 chunks.append({
                     "content": chunk_text,
                     "page_number": page_number,

@@ -12,7 +12,7 @@ from flask import Blueprint, request, jsonify, current_app,g
 from werkzeug.utils import secure_filename
 from datetime import datetime,timezone
 from werkzeug.datastructures import FileStorage
-
+import uuid
 from flask import current_app
 from app.extensions import db
 from app.models.document import Document, Chunk, Collection
@@ -160,7 +160,7 @@ def get_upload_url(collection_id):
 def upload_document(collection_id):
     """Upload a document to a collection and process it."""
 
-    SUPPORTED_FILE_TYPES = [".pdf"]
+    SUPPORTED_FILE_TYPES = [".pdf",".txt"]
     collection = db.session.get(Collection, collection_id)
     if not collection:
         return jsonify({"error": "Collection not found"}), 404
@@ -216,8 +216,7 @@ def upload_document(collection_id):
         chunk_ids = []
         for chunk_data in result["chunks"]:
 
-            raw_chunk_id =f"{chunk_data["metadata"]["source"]}::{chunk_data["chunk_index"]}::{chunk_data["content"]}".encode("utf-8")
-            chunk_id =  hashlib.sha256(raw_chunk_id).hexdigest()
+            chunk_id = str(uuid.uuid4())
             chunk_tokens = tokenize(chunk_data["content"])
             chunk_ids.append(chunk_id)
             chunk = Chunk(

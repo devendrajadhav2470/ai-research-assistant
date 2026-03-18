@@ -1,8 +1,10 @@
-import React, { useState, useRef, useEffect,useLayoutEffect } from 'react';
-import { Send, Square, Bot, Loader2, BookOpen } from 'lucide-react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { Loader2, Sparkles } from 'lucide-react';
 import type { Message, Citation } from '../types';
 import MessageBubble from './MessageBubble';
 import CitationCard from './CitationCard';
+import WelcomeScreen from './WelcomeScreen';
+import ChatInput from './ChatInput';
 import ReactMarkdown from 'react-markdown';
 
 interface ChatInterfaceProps {
@@ -38,235 +40,152 @@ export default function ChatInterface({
   onLoadMoreMessages,
   evaluatingId,
 }: ChatInterfaceProps) {
-  const [input, setInput] = useState('');
+  const [promptValue, setPromptValue] = useState<string | undefined>(undefined);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const didPrependRef = useRef(false);
+
+  const pendingPrependRef = useRef<{
+    prevScrollHeight: number;
+    prevScrollTop: number;
+  } | null>(null);
+
   // Auto-scroll to bottom
   useEffect(() => {
-    if (didPrependRef.current){
-        didPrependRef.current = false;
-       return;
+    if (didPrependRef.current) {
+      didPrependRef.current = false;
+      return;
     }
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingContent]);
 
-  // Used to prevent scroll jump when we prepend messages
-    const pendingPrependRef = useRef<{
-      prevScrollHeight: number;
-      prevScrollTop: number;
-    } | null>(null);
-  
-
-  // Auto-resize textarea
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-    }
-  }, [input]);
-
-
+  // Prevent scroll jump on prepend
   useLayoutEffect(() => {
     const container = containerRef.current;
     const pending = pendingPrependRef.current;
-  
     if (!container || !pending) return;
-  
+
     const newScrollHeight = container.scrollHeight;
     const heightDiff = newScrollHeight - pending.prevScrollHeight;
-  
     container.scrollTop = pending.prevScrollTop + heightDiff;
-  
-    pendingPrependRef.current = null; // clear it
+    pendingPrependRef.current = null;
   }, [messages.length]);
 
-  // Scroll handler: when near top, load older
   function onScroll() {
-    if(loadingMessages || !hasMoreMessages){
-      return;
-    }
+    if (loadingMessages || !hasMoreMessages) return;
     const el = containerRef.current;
     if (!el) return;
-    
-    // “Near top” threshold (px)
-
     if (el.scrollTop < 80) {
       pendingPrependRef.current = {
-          prevScrollHeight: el.scrollHeight,
-          prevScrollTop: el.scrollTop,
-        };
+        prevScrollHeight: el.scrollHeight,
+        prevScrollTop: el.scrollTop,
+      };
       didPrependRef.current = true;
       void onLoadMoreMessages();
     }
   }
 
-
-  const handleSubmit = () => {
-    const trimmed = input.trim();
-    if (trimmed && !isStreaming) {
-      onSendMessage(trimmed);
-      setInput('');
-    }
+  const handlePromptClick = (prompt: string) => {
+    setPromptValue(prompt);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
+  const handleSendMessage = (message: string) => {
+    setPromptValue(undefined);
+    onSendMessage(message);
   };
+
+  const showWelcome = messages.length === 0 && !isStreaming;
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-50 h-full">
+    <div className="flex-1 flex flex-col bg-page h-full">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-6 py-6" ref={containerRef} onScroll={onScroll}>
-        {messages.length === 0 && !isStreaming && (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="bg-indigo-100 p-4 rounded-full mb-4">
-              <BookOpen size={40} className="text-indigo-600" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-800 mb-2">
-              AI Research Assistant
-            </h2>
-            <p className="text-gray-500 max-w-md text-sm">
-              {collectionName
-                ? `Ask questions about documents in "${collectionName}". Upload PDFs first, then ask anything.`
-                : 'Select or create a collection to get started.'}
-            </p>
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg">
-              {[
-                'What are the key findings of this paper?',
-                'Summarize the methodology used.',
-                'What are the limitations discussed?',
-                'Compare the results across the documents.',
-              ].map((suggestion) => (
-                <button
-                  key={suggestion}
-                  onClick={() => {
-                    setInput(suggestion);
-                    textareaRef.current?.focus();
-                  }}
-                  className="text-left px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
-                >
-                  {suggestion}
-                </button>
+      <div className="flex-1 overflow-y-auto" ref={containerRef} onScroll={onScroll}>
+        {showWelcome ? (
+          <WelcomeScreen collectionName={collectionName} onPromptClick={handlePromptClick} />
+        ) : (
+          <div className="px-4 sm:px-6 py-6">
+            <div className="max-w-3xl mx-auto space-y-5">
+              {loadingMessages && hasMoreMessages && (
+                <div className="flex justify-center py-3">
+                  <div className="flex items-center gap-2 text-xs text-text-secondary bg-white px-4 py-2 rounded-full shadow-card">
+                    <Loader2 size={14} className="animate-spin" />
+                    Loading older messages...
+                  </div>
+                </div>
+              )}
+
+              {!hasMoreMessages && messages.length > 0 && (
+                <div className="flex justify-center py-2">
+                  <span className="text-[11px] text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+                    Beginning of conversation
+                  </span>
+                </div>
+              )}
+
+              {messages.map((msg) => (
+                <MessageBubble
+                  key={msg.id}
+                  message={msg}
+                  onEvaluate={onEvaluate}
+                  isEvaluating={evaluatingId === msg.id}
+                  onResend={onSendMessage}
+                />
               ))}
+
+              {/* Streaming Response */}
+              {isStreaming && (
+                <div className="flex gap-3 animate-fade-in">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-primary-500">
+                    <Sparkles size={14} className="text-white" />
+                  </div>
+                  <div className="flex-1 max-w-[85%]">
+                    {streamingCitations.length > 0 && !streamingContent && (
+                      <div className="mb-3 space-y-1.5">
+                        <p className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider">
+                          Retrieved Sources
+                        </p>
+                        {streamingCitations.map((citation, idx) => (
+                          <CitationCard key={idx} citation={citation} index={idx} />
+                        ))}
+                      </div>
+                    )}
+                    <div className="bg-white border border-gray-100 rounded-bubble rounded-tl-lg px-4 py-3 shadow-card">
+                      {streamingContent ? (
+                        <div className="prose prose-sm max-w-none text-sm text-text-primary">
+                          <ReactMarkdown>{streamingContent}</ReactMarkdown>
+                          <span className="inline-block w-1.5 h-4 bg-primary-500 rounded-sm typing-cursor ml-0.5 align-text-bottom" />
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2.5 text-sm text-text-secondary">
+                          <Loader2 size={14} className="animate-spin text-primary-500" />
+                          Searching documents...
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
+            <div ref={messagesEndRef} />
           </div>
         )}
-
-
-
-
-        <div className="space-y-6 max-w-4xl mx-auto">
-          {loadingMessages && hasMoreMessages && (
-            <div style={{ padding: 8, textAlign: "center" }}>Loading…</div>
-          )}
-          {!hasMoreMessages && (
-            <div style={{ padding: 8, textAlign: "center", opacity: 0.7 }}>
-              No more messages
-            </div>
-          )}
-
-          {messages.map((msg) => (
-            <MessageBubble
-              key={msg.id}
-              message={msg}
-              onEvaluate={onEvaluate}
-              isEvaluating={evaluatingId === msg.id}
-            />
-          ))}
-
-          {/* Streaming Response */}
-          {isStreaming && (
-            <div className="flex gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-gray-700">
-                <Bot size={16} className="text-white" />
-              </div>
-              <div className="flex-1 max-w-[80%]">
-                {streamingCitations.length > 0 && !streamingContent && (
-                  <div className="mb-3 space-y-1.5">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                      Retrieved Sources
-                    </p>
-                    {streamingCitations.map((citation, idx) => (
-                      <CitationCard key={idx} citation={citation} index={idx} />
-                    ))}
-                  </div>
-                )}
-                <div className="inline-block bg-white border border-gray-200 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm">
-                  {streamingContent ? (
-                    <div className="prose prose-sm max-w-none text-sm">
-                      <ReactMarkdown>{streamingContent}</ReactMarkdown>
-                      <span className="inline-block w-2 h-4 bg-indigo-500 animate-pulse ml-0.5" />
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <Loader2 size={16} className="animate-spin" />
-                      Searching documents...
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Error Banner */}
       {error && (
-        <div className="mx-6 mb-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+        <div className="mx-4 sm:mx-6 mb-2 px-4 py-2.5 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 animate-fade-in">
           {error}
         </div>
       )}
 
       {/* Input Area */}
-      <div className="border-t border-gray-200 bg-white px-6 py-4">
-        <div className="max-w-4xl mx-auto flex items-end gap-3">
-          <div className="flex-1 relative">
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={
-                collectionName
-                  ? `Ask a question about "${collectionName}"...`
-                  : 'Select a collection first...'
-              }
-              disabled={!collectionName || isStreaming}
-              rows={1}
-              className="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed max-h-32"
-            />
-          </div>
-          {isStreaming ? (
-            <button
-              onClick={onStopStreaming}
-              className="flex-shrink-0 p-3 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors"
-              title="Stop generating"
-            >
-              <Square size={18} />
-            </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={!input.trim() || !collectionName}
-              className="flex-shrink-0 p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-              title="Send message"
-            >
-              <Send size={18} />
-            </button>
-          )}
-        </div>
-        <p className="text-center text-xs text-gray-400 mt-2">
-          Answers are generated from your uploaded documents using RAG.
-        </p>
-      </div>
+      <ChatInput
+        collectionName={collectionName}
+        isStreaming={isStreaming}
+        onSendMessage={handleSendMessage}
+        onStopStreaming={onStopStreaming}
+        initialValue={promptValue}
+      />
     </div>
   );
 }
-
