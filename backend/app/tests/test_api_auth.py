@@ -125,7 +125,7 @@ class TestSignin:
 
         resp = client.post("/api/auth/signin", headers=JSON_HEADERS,
                            data=json.dumps({"email": "a@b.com",
-                                            "password": "wrong"}))
+                                            "password": "wrongp"}))
         assert resp.status_code == 401
 
     def test_missing_fields(self, client):
