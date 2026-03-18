@@ -47,7 +47,7 @@ export default function DocumentUpload({
     onDrop: (acceptedFiles) => {
       acceptedFiles.forEach((file) => onUpload(file));
     },
-    accept: { 'application/pdf': ['.pdf'] },
+    accept: { 'application/pdf': ['.pdf'], 'text/plain': ['.txt'] },
     disabled: uploading,
     maxSize: 50 * 1024 * 1024,
     multiple: true,
@@ -103,10 +103,10 @@ export default function DocumentUpload({
                 <div>
                   <p className="text-sm font-medium text-text-primary">
                     {isDragActive
-                      ? 'Drop your PDF files here...'
-                      : 'Drag & drop PDF files here, or click to browse'}
+                      ? 'Drop your files here...'
+                      : 'Drag & drop PDF or TXT files here, or click to browse'}
                   </p>
-                  <p className="text-xs text-text-secondary mt-1">Supports PDF files up to 50 MB</p>
+                  <p className="text-xs text-text-secondary mt-1">Supports PDF and TXT files up to 50 MB</p>
                 </div>
               </div>
             )}
@@ -169,7 +169,7 @@ export default function DocumentUpload({
             ))}
             {documents.length === 0 && (
               <p className="text-sm text-text-secondary text-center py-6">
-                No documents uploaded yet. Drop a PDF above to get started.
+                No documents uploaded yet. Drop a PDF or TXT file above to get started.
               </p>
             )}
           </div>
