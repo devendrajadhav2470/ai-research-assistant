@@ -1,6 +1,7 @@
 /**
  * API client for the AI Research Assistant backend.
  */
+import { v4 as uuidv4 } from "uuid";
 import axios from 'axios';
 
 import type {
@@ -49,7 +50,7 @@ var sessionId = getCookie('sessionId')
 
 if(!sessionId){
   console.log("no sessionId cookie found setting it now");
-  setCookie('sessionId', crypto.randomUUID(), 10);
+  setCookie('sessionId', uuidv4(), 10);
   sessionId = getCookie('sessionId')
 }
 console.log(`sessionId created or found: ${sessionId}`)
