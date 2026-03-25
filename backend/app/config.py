@@ -41,6 +41,13 @@ class Config:
     DEFAULT_LLM_PROVIDER = os.getenv("DEFAULT_LLM_PROVIDER", "google")
     DEFAULT_MODEL_NAME = os.getenv("DEFAULT_MODEL_NAME", "gemini-2.5-flash")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+    # Local Ollama (OpenAI-compatible API at /v1/chat/completions). Set to empty string to disable.
+    _ollama_url = os.getenv("OLLAMA_BASE_URL")
+    OLLAMA_BASE_URL = (
+        _ollama_url.strip()
+        if _ollama_url is not None
+        else "http://127.0.0.1:11434"
+    )
     # RAG settings
     CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1000"))
     CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))

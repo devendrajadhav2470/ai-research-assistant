@@ -1,0 +1,176 @@
+{
+  "collection_id": 11,
+  "answer_provider": "ollama",
+  "answer_model": "llama3.2",
+  "eval_provider": "llama3.2",
+  "eval_model": "ollama",
+  "results": [
+    {
+      "idx": 0,
+      "split": "single_passage",
+      "question": "What do keybullet kin drop?",
+      "evaluation": {
+        "faithfulness": {
+          "score": 5,
+          "explanation": "The answer directly states what Keybullet Kin drop upon death, which is supported by all relevant contexts."
+        },
+        "relevance": {
+          "score": 4,
+          "explanation": "The answer addresses the user's question about what Keybullet Kin drop, but it does not provide additional information beyond that."
+        },
+        "completeness": {
+          "score": 3,
+          "explanation": "The answer covers the main point of what Keybullet Kin drop, but it does not cover all aspects of the question, such as their behavior or spawn rates."
+        },
+        "citation_accuracy": {
+          "score": 5,
+          "explanation": "All citations in the generated answer accurately reference the correct sources and provide relevant information."
+        },
+        "overall_score": 4.2,
+        "summary": "The answer is generally accurate and addresses the user's question, but it could be more comprehensive."
+      },
+      "timings_ms": {
+        "retrieval_ms": 4143.359199981205,
+        "ttft_ms": 6213.434899982531,
+        "ttft_after_retrieval_ms": 2070.0757000013255,
+        "generation_wall_ms": 3899.327800027095,
+        "e2e_ms": 8042.6870000083
+      },
+      "error": null
+    },
+    {
+      "idx": 1,
+      "split": "single_passage",
+      "question": "What kind of gun does the bandana bullet kin use?",
+      "evaluation": {
+        "faithfulness": {
+          "score": 5,
+          "explanation": "The answer directly states what kind of gun Bandana Bullet Kin use, which is supported by the context."
+        },
+        "relevance": {
+          "score": 4,
+          "explanation": "The answer addresses the user's question about the type of gun used by Bandana Bullet Kin, but it could be more focused on the specific details provided in the context."
+        },
+        "completeness": {
+          "score": 2,
+          "explanation": "The answer only provides information about Bandana Bullet Kin and does not cover all aspects of the question, such as the differences between regular Bullet Kin and Tanker."
+        },
+        "citation_accuracy": {
+          "score": 5,
+          "explanation": "The citation page number is correct, but it's unclear if the source is properly referenced in the answer."
+        },
+        "overall_score": 3.2,
+        "summary": "The generated answer provides accurate information about Bandana Bullet Kin, but could be more comprehensive and focused on the specific details provided in the context."
+      },
+      "timings_ms": {
+        "retrieval_ms": 3814.122000010684,
+        "ttft_ms": 7289.171600015834,
+        "ttft_after_retrieval_ms": 3475.04960000515,
+        "generation_wall_ms": 5469.464100024197,
+        "e2e_ms": 9283.586100034881
+      },
+      "error": null
+    },
+    {
+      "idx": 2,
+      "split": "single_passage",
+      "question": "What do the giants look like?",
+      "evaluation": {
+        "faithfulness": {
+          "score": 5,
+          "explanation": "The answer states that there is not enough information to answer the question, which aligns with the provided context"
+        },
+        "relevance": {
+          "score": 1,
+          "explanation": "The answer does not address the user's question about what the giants look like"
+        },
+        "completeness": {
+          "score": 5,
+          "explanation": "The answer is complete in its explanation of the lack of information to answer the question"
+        },
+        "citation_accuracy": {
+          "score": 5,
+          "explanation": "There are no citations in the generated answer"
+        },
+        "overall_score": 3.0,
+        "summary": "Answer lacks faithfulness and relevance, but provides a complete explanation of insufficient information"
+      },
+      "timings_ms": {
+        "retrieval_ms": 1990.1367999846116,
+        "ttft_ms": 3887.5279999920167,
+        "ttft_after_retrieval_ms": 1897.3912000074051,
+        "generation_wall_ms": 3157.049600034952,
+        "e2e_ms": 5147.186400019564
+      },
+      "error": null
+    },
+    {
+      "idx": 3,
+      "split": "single_passage",
+      "question": "What happens on day 2?",
+      "evaluation": {
+        "faithfulness": {
+          "score": 0,
+          "explanation": "Evaluation failed"
+        },
+        "relevance": {
+          "score": 0,
+          "explanation": "Evaluation failed"
+        },
+        "completeness": {
+          "score": 0,
+          "explanation": "Evaluation failed"
+        },
+        "citation_accuracy": {
+          "score": 0,
+          "explanation": "Evaluation failed"
+        },
+        "overall_score": 0,
+        "summary": "Evaluation could not be completed. Parse error: Expecting ',' delimiter: line 7 column 113 (char 756)",
+        "error": true
+      },
+      "timings_ms": {
+        "retrieval_ms": 1653.104999975767,
+        "ttft_ms": 3719.2318000015803,
+        "ttft_after_retrieval_ms": 2066.1268000258133,
+        "generation_wall_ms": 13311.767800012603,
+        "e2e_ms": 14964.87279998837
+      },
+      "error": true
+    },
+    {
+      "idx": 4,
+      "split": "single_passage",
+      "question": "What were the requirements for the project?",
+      "evaluation": {
+        "faithfulness": {
+          "score": 0,
+          "explanation": "Evaluation failed"
+        },
+        "relevance": {
+          "score": 0,
+          "explanation": "Evaluation failed"
+        },
+        "completeness": {
+          "score": 0,
+          "explanation": "Evaluation failed"
+        },
+        "citation_accuracy": {
+          "score": 0,
+          "explanation": "Evaluation failed"
+        },
+        "overall_score": 0,
+        "summary": "Evaluation could not be completed. Parse error: Expecting ',' delimiter: line 7 column 136 (char 844)",
+        "error": true
+      },
+      "timings_ms": {
+        "retrieval_ms": 1423.4132000128739,
+        "ttft_ms": 3202.4508000467904,
+        "ttft_after_retrieval_ms": 1779.0376000339165,
+        "generation_wall_ms": 2907.20010001678,
+        "e2e_ms": 4330.613300029654
+      },
+      "error": true
+    }
+  ]
+}
