@@ -10,7 +10,7 @@
 
 A full-stack **Retrieval-Augmented Generation (RAG)** application that lets you upload research papers, technical documents, and PDFs, then ask questions and get accurate, cited answers powered by LLMs.
 
-Built with a **hybrid retrieval pipeline** (semantic search + keyword search + reranking), **multi-provider LLM support** (OpenAI, Anthropic, Groq), **real-time streaming**, and **LLM-as-Judge evaluation** — all wrapped in a modern chat UI.
+Built with a **hybrid retrieval pipeline** (semantic search + keyword search + reranking), **multi-provider LLM support** (OpenAI, Anthropic, Google Gemini, Groq, and local Ollama), **real-time streaming**, and **LLM-as-Judge evaluation** — all wrapped in a modern chat UI.
 
 ---
 
@@ -22,19 +22,21 @@ Built with a **hybrid retrieval pipeline** (semantic search + keyword search + r
 - Conversation history for multi-turn follow-up questions
 
 ### Advanced Hybrid Retrieval
-- **FAISS vector search** with SentenceTransformer embeddings (`all-MiniLM-L6-v2`)
+- **ChromaDB vector search** with SentenceTransformer embeddings (`all-MiniLM-L6-v2`)
 - **BM25 keyword search** for lexical matching
 - **Reciprocal Rank Fusion (RRF)** to merge results from both retrieval methods
 - **Cross-encoder reranking** (`ms-marco-MiniLM-L-6-v2`) for precision
 
 ### Multi-Provider LLM Support
-| Provider | Models |
-|----------|--------|
-| **OpenAI** | GPT-4o, GPT-4o Mini, GPT-4 Turbo |
-| **Anthropic** | Claude Sonnet 4, Claude 3.5 Haiku |
-| **Groq** | Llama 3.3 70B, Llama 3.1 8B, Mixtral 8x7B |
+| Provider | Models | Notes |
+|----------|--------|-------|
+| **OpenAI** | GPT-4o, GPT-4o Mini, GPT-4 Turbo | Cloud API |
+| **Anthropic** | Claude Sonnet 4, Claude 3.5 Haiku | Cloud API |
+| **Google** | Gemini 3 Pro/Flash/Flash Lite, Gemini 2.5 Pro/Flash | Cloud API |
+| **Groq** | Llama 3.3 70B, Llama 3.1 8B, Mixtral 8x7B | Cloud API |
+| **Ollama** | Llama 3.2, Llama 3.1, Mistral (any local model) | Local, no API key needed |
 
-Switch models on the fly from the UI — only providers with configured API keys are shown.
+Switch models on the fly from the UI — only providers with configured API keys (or a reachable Ollama server) are shown.
 
 ### Real-Time Streaming
 - Server-Sent Events (SSE) deliver tokens as they're generated
@@ -47,11 +49,12 @@ Switch models on the fly from the UI — only providers with configured API keys
   - **Relevance** — Does the answer address the question?
   - **Completeness** — Are all important aspects covered?
   - **Citation Accuracy** — Do citations correctly reference sources?
-- Per-dimension scores (1–5) with explanations and an overall score
+- Per-dimension scores (1-5) with explanations and an overall score
+- **Evaluation notebook** (`backend/notebooks/evaluation.ipynb`) for batch benchmarking: runs all questions from a curated dataset, collects LLM-judge scores and latency metrics (retrieval, TTFT, generation, end-to-end) with p50/p95 breakdowns, and exports results to JSON
 
 ### Collection-Based Organization
 - Group documents into **collections** (e.g., per project, topic, or paper)
-- Each collection has its own FAISS index and conversation threads
+- Each collection has its own ChromaDB index and conversation threads
 - Upload, view, and manage documents per collection
 
 ### Observability
@@ -83,16 +86,16 @@ Switch models on the fly from the UI — only providers with configured API keys
 │  │  └──┬───┬───┘    └───────────────┘   │               │
 │  │     │   │                            │               │
 │  │     ▼   ▼                            │               │
-│  │  ┌────┐ ┌─────┐  ┌──────────────┐   │               │
-│  │  │FAISS│ │BM25 │  │  Evaluation  │   │               │
-│  │  │Index│ │Index│  │  (LLM Judge) │   │               │
-│  │  └────┘ └─────┘  └──────────────┘   │               │
+│  │  ┌────────┐ ┌─────┐ ┌────────────┐  │               │
+│  │  │ChromaDB│ │BM25 │ │ Evaluation │  │               │
+│  │  │ Index  │ │Index│ │ (LLM Judge)│  │               │
+│  │  └────────┘ └─────┘ └────────────┘  │               │
 │  └──────────────────────────────────────┘               │
 │                                                         │
 │  ┌──────────────┐  ┌────────────┐  ┌──────────────┐    │
-│  │  Document    │  │  Embedding │  │  SQLite DB   │    │
+│  │  Document    │  │  Embedding │  │ PostgreSQL   │    │
 │  │  Processor   │  │  Service   │  │  (metadata)  │    │
-│  │  (PyPDF)     │  │ (MiniLM)   │  └──────────────┘    │
+│  │ (PyPDF/MuPDF)│  │ (MiniLM)   │  └──────────────┘    │
 │  └──────────────┘  └────────────┘                       │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -105,7 +108,9 @@ Switch models on the fly from the UI — only providers with configured API keys
 
 - **Python 3.11+**
 - **Node.js 18+**
-- At least one LLM API key (OpenAI, Anthropic, or Groq)
+- **PostgreSQL** (running, with credentials in `.env`)
+- **ChromaDB** server (default: `localhost:8000`)
+- At least one LLM provider: an API key (OpenAI, Anthropic, Google, or Groq) **or** a running [Ollama](https://ollama.com) instance
 
 ### 1. Clone the Repository
 
@@ -119,14 +124,26 @@ cd ai-research-assistant
 Create a `.env` file in the project root:
 
 ```env
-# LLM Providers (at least one required)
+# Database (required)
+POSTGRES_PASSWORD=yourpassword
+POSTGRES_ADDRESS=localhost:5432
+
+# LLM Providers (at least one required — or use Ollama locally)
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 GROQ_API_KEY=gsk_...
+GEMINI_API_KEY=...
+
+# Local Ollama (no API key needed; set to empty string to disable)
+OLLAMA_BASE_URL=http://127.0.0.1:11434
 
 # Defaults
-DEFAULT_LLM_PROVIDER=openai
-DEFAULT_MODEL_NAME=gpt-4o-mini
+DEFAULT_LLM_PROVIDER=ollama
+DEFAULT_MODEL_NAME=llama3.2
+
+# Evaluation judge (can be any supported provider/model)
+EVALUATOR_MODEL_PROVIDER=google
+EVALUATOR_MODEL_NAME=gemini-2.5-flash
 
 # Embedding & Retrieval
 EMBEDDING_MODEL_NAME=all-MiniLM-L6-v2
@@ -135,6 +152,11 @@ CHUNK_SIZE=1000
 CHUNK_OVERLAP=200
 TOP_K_RETRIEVAL=20
 TOP_K_RERANK=5
+
+# Auth
+SECRET_KEY=your-secret-key
+JWT_SECRET_KEY=your-jwt-secret
+MAX_QUESTION_LENGTH=500
 
 # Observability (optional)
 LANGFUSE_PUBLIC_KEY=
@@ -186,7 +208,31 @@ docker compose up --build
 2. **Upload Documents** — Open the documents panel and drag-and-drop PDF files. They'll be parsed, chunked, embedded, and indexed automatically.
 3. **Ask Questions** — Type a question in the chat. The system retrieves relevant chunks, streams an LLM-generated answer with inline citations, and shows source cards.
 4. **Evaluate Answers** — Click the evaluate button on any assistant message to get an LLM-as-Judge quality assessment with scores for faithfulness, relevance, completeness, and citation accuracy.
-5. **Switch Models** — Use the model selector in the header to switch between providers and models on the fly.
+5. **Switch Models** — Use the model selector in the sidebar to switch between providers and models on the fly.
+
+---
+
+## Evaluation
+
+The project includes an evaluation notebook at `backend/notebooks/evaluation.ipynb` for systematically benchmarking the RAG pipeline.
+
+**What it measures:**
+
+| Category | Metrics |
+|----------|---------|
+| **Answer quality** | LLM-as-Judge scores (1-5) for faithfulness, relevance, completeness, citation accuracy, and overall |
+| **Latency** | Retrieval time, TTFT (time to first token), generation wall time, end-to-end — each with mean, p50, p95 |
+
+**Dataset:** Three question sets ship in `backend/notebooks/`:
+- `single_passage_answer_questions.csv` — questions answerable from one chunk
+- `multi_passage_answer_questions.csv` — questions requiring multiple chunks
+- `no_answer_questions.csv` — questions with no answer in the corpus (tests refusal)
+
+Source documents live in `backend/notebooks/rag-dataset/rag-dataset/` (20 diverse `.txt` files).
+
+**How to run:**
+1. Set `COLLECTION_ID` to an existing collection (or let the notebook ingest the dataset via HTTP).
+2. Run all cells. Results print to stdout and export to `evaluation_results.json`.
 
 ---
 
@@ -206,20 +252,28 @@ docker compose up --build
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/api/documents/collection/:id` | List documents in a collection |
-| `POST` | `/api/documents/upload/:collection_id` | Upload a PDF (multipart) |
+| `POST` | `/api/documents/upload/:collection_id` | Upload a document (multipart) |
 | `DELETE` | `/api/documents/:id` | Delete a document |
 
 ### Chat
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/chat/conversations/:collection_id` | List conversations |
+| `GET` | `/api/chat/conversations/collection/:collection_id` | List conversations |
 | `POST` | `/api/chat/conversations` | Create a conversation |
 | `GET` | `/api/chat/conversations/:id` | Get conversation with messages |
+| `PATCH` | `/api/chat/conversations/:id` | Update a conversation |
 | `DELETE` | `/api/chat/conversations/:id` | Delete a conversation |
 | `POST` | `/api/chat/query` | Query (non-streaming) |
 | `POST` | `/api/chat/query/stream` | Query (SSE streaming) |
 | `GET` | `/api/chat/models` | List available LLM models |
+
+### Retrieval
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/retrieval/search` | Search chunks in a collection |
+| `GET` | `/api/retrieval/stats/:collection_id` | Get collection stats (chunk count, documents) |
 
 ### Evaluation
 
@@ -227,6 +281,13 @@ docker compose up --build
 |--------|----------|-------------|
 | `POST` | `/api/evaluation/evaluate/:message_id` | Evaluate a message |
 | `GET` | `/api/evaluation/message/:message_id` | Get evaluation for a message |
+
+### Auth
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/auth/signup` | Register a new user |
+| `POST` | `/api/auth/signin` | Sign in |
 
 ### Health
 
@@ -246,26 +307,36 @@ ai-research-assistant/
 │   │   ├── config.py              # Environment-based configuration
 │   │   ├── extensions.py          # Flask extensions (SQLAlchemy, CORS)
 │   │   ├── api/
+│   │   │   ├── auth.py            # Auth endpoints (signup, signin, guest)
 │   │   │   ├── chat.py            # Chat & query endpoints (SSE streaming)
 │   │   │   ├── collections.py     # Collection CRUD
+│   │   │   ├── config.py          # Config/health endpoints
 │   │   │   ├── documents.py       # Document upload & management
-│   │   │   └── evaluation.py      # LLM-as-Judge evaluation
+│   │   │   ├── evaluation.py      # LLM-as-Judge evaluation
+│   │   │   └── retrieval.py       # Direct retrieval & collection stats
 │   │   ├── models/
 │   │   │   ├── chat.py            # Conversation & Message models
 │   │   │   └── document.py        # Collection, Document, Chunk models
 │   │   ├── services/
 │   │   │   ├── rag_pipeline.py    # Core RAG orchestration
-│   │   │   ├── retriever.py       # Hybrid retriever (FAISS + BM25 + RRF + reranking)
+│   │   │   ├── retriever.py       # Hybrid retriever (ChromaDB + BM25 + RRF + reranking)
 │   │   │   ├── llm_service.py     # Multi-provider LLM service (LangChain)
 │   │   │   ├── embedding_service.py # SentenceTransformer embeddings
-│   │   │   ├── vector_store.py    # FAISS index management
+│   │   │   ├── vector_store.py    # ChromaDB index management
 │   │   │   ├── bm25_index.py      # BM25 keyword index
-│   │   │   ├── document_processor.py # PDF parsing & chunking
+│   │   │   ├── document_processor.py # PDF/DOCX/HTML parsing & chunking
 │   │   │   ├── chat_service.py    # Chat history management
-│   │   │   └── evaluation_service.py # LLM-as-Judge evaluation
+│   │   │   ├── evaluation_service.py # LLM-as-Judge evaluation
+│   │   │   └── user_service.py    # User & guest session management
 │   │   └── utils/
 │   │       └── observability.py   # Langfuse tracing integration
-│   ├── tests/                     # Backend test suite
+│   ├── notebooks/
+│   │   ├── evaluation.ipynb       # Batch evaluation notebook
+│   │   ├── single_passage_answer_questions.csv
+│   │   ├── multi_passage_answer_questions.csv
+│   │   ├── no_answer_questions.csv
+│   │   └── rag-dataset/           # Source documents for evaluation
+│   ├── tests/                     # Backend test suite (21 test files)
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── frontend/
@@ -275,10 +346,9 @@ ai-research-assistant/
 │   │   │   ├── ChatInterface.tsx   # Chat UI with streaming
 │   │   │   ├── MessageBubble.tsx   # Message rendering with markdown
 │   │   │   ├── CitationCard.tsx    # Source citation display
-│   │   │   ├── CollectionSidebar.tsx # Collection & conversation nav
-│   │   │   ├── DocumentUpload.tsx  # Drag-and-drop PDF upload
-│   │   │   ├── EvaluationBadge.tsx # Quality score display
-│   │   │   └── Header.tsx          # Model selector header
+│   │   │   ├── Sidebar.tsx         # Collection, conversation & model nav
+│   │   │   ├── DocumentUpload.tsx  # Drag-and-drop document upload
+│   │   │   └── EvaluationBadge.tsx # Quality score display
 │   │   ├── hooks/                  # Custom React hooks
 │   │   ├── services/api.ts         # API client with SSE support
 │   │   └── types/index.ts          # TypeScript type definitions
@@ -296,16 +366,17 @@ ai-research-assistant/
 |-------|-----------|
 | **Frontend** | React 18, TypeScript, Vite, Tailwind CSS |
 | **Backend** | Flask 3.1, Python 3.11 |
-| **LLM Orchestration** | LangChain (OpenAI, Anthropic, Groq) |
+| **LLM Orchestration** | LangChain (OpenAI, Anthropic, Google Gemini, Groq, Ollama) |
 | **Embeddings** | SentenceTransformers (`all-MiniLM-L6-v2`) |
-| **Vector Store** | FAISS (with cosine similarity) |
+| **Vector Store** | ChromaDB |
 | **Keyword Search** | BM25 (`rank-bm25`) |
 | **Reranking** | Cross-encoder (`ms-marco-MiniLM-L-6-v2`) |
-| **Document Parsing** | PyPDF |
-| **Database** | SQLite + SQLAlchemy |
+| **Document Parsing** | PyPDF, PyMuPDF, python-docx, readability-lxml |
+| **Database** | PostgreSQL + SQLAlchemy |
+| **Object Storage** | AWS S3 (document uploads) |
 | **Streaming** | Server-Sent Events (SSE) |
 | **Observability** | Langfuse |
-| **Deployment** | Docker + Docker Compose + Nginx |
+| **Deployment** | Docker + Docker Compose |
 
 ---
 
@@ -315,11 +386,17 @@ All settings are configurable via environment variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `POSTGRES_PASSWORD` | — | PostgreSQL password |
+| `POSTGRES_ADDRESS` | — | PostgreSQL host:port (e.g. `localhost:5432`) |
 | `OPENAI_API_KEY` | — | OpenAI API key |
 | `ANTHROPIC_API_KEY` | — | Anthropic API key |
 | `GROQ_API_KEY` | — | Groq API key |
-| `DEFAULT_LLM_PROVIDER` | `openai` | Default LLM provider |
-| `DEFAULT_MODEL_NAME` | `gpt-4o-mini` | Default model |
+| `GEMINI_API_KEY` | — | Google Gemini API key |
+| `OLLAMA_BASE_URL` | `http://127.0.0.1:11434` | Ollama server URL (set empty to disable) |
+| `DEFAULT_LLM_PROVIDER` | `google` | Default LLM provider |
+| `DEFAULT_MODEL_NAME` | `gemini-2.5-flash` | Default model |
+| `EVALUATOR_MODEL_PROVIDER` | — | LLM provider used for evaluation judge |
+| `EVALUATOR_MODEL_NAME` | — | Model used for evaluation judge |
 | `EMBEDDING_MODEL_NAME` | `all-MiniLM-L6-v2` | SentenceTransformer model for embeddings |
 | `RERANKER_MODEL_NAME` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Cross-encoder model for reranking |
 | `CHUNK_SIZE` | `1000` | Max characters per text chunk |
@@ -327,9 +404,26 @@ All settings are configurable via environment variables:
 | `TOP_K_RETRIEVAL` | `20` | Candidates retrieved from each search method |
 | `TOP_K_RERANK` | `5` | Final results after reranking |
 | `CHAT_HISTORY_WINDOW` | `10` | Number of past messages included as context |
+| `MAX_QUESTION_LENGTH` | — | Max characters per user question |
+| `SECRET_KEY` | — | Flask secret key |
+| `JWT_SECRET_KEY` | — | JWT signing key |
+| `S3_BUCKET` | `amzn-s3-bookrag-bucket` | S3 bucket for document uploads |
 | `LANGFUSE_PUBLIC_KEY` | — | Langfuse public key (optional) |
 | `LANGFUSE_SECRET_KEY` | — | Langfuse secret key (optional) |
 | `LANGFUSE_HOST` | `https://cloud.langfuse.com` | Langfuse host URL |
+
+---
+
+## Testing
+
+Run the backend test suite:
+
+```bash
+cd backend
+python -m pytest app/tests/ -q
+```
+
+The suite covers services (RAG pipeline, retriever, LLM service, evaluation, embeddings, BM25, vector store, document processor, chat, user/auth), API endpoints (collections, documents, chat, evaluation, retrieval, config, auth), and data models.
 
 ---
 
