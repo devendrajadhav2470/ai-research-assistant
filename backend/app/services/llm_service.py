@@ -33,6 +33,11 @@ AVAILABLE_MODELS = {
         {"id": "gemini-2.5-pro", "name": "Gemini 2.5 Pro"},
         {"id": "gemini-2.5-flash", "name": "Gemini 2.5 Flash"},
     ],
+    "ollama": [
+        {"id": "llama3.2", "name": "Llama 3.2"},
+        {"id": "llama3.1", "name": "Llama 3.1"},
+        {"id": "mistral", "name": "Mistral"},
+    ],
 }
 
 
@@ -84,6 +89,15 @@ class LLMService:
                     api_key=Config.GEMINI_API_KEY,
                     temperature=temperature,
                     streaming=True,
+                )
+            elif provider == "ollama":
+                from langchain_ollama import ChatOllama
+
+                base_url = Config.OLLAMA_BASE_URL or "http://127.0.0.1:11434"
+                self._clients[cache_key] = ChatOllama(
+                    model=model_name,
+                    base_url=base_url,
+                    temperature=temperature,
                 )
             else:
                 raise ValueError(f"Unsupported LLM provider: {provider}")
@@ -176,5 +190,7 @@ class LLMService:
             available["groq"] = AVAILABLE_MODELS["groq"]
         if Config.GEMINI_API_KEY:
             available["google"] = AVAILABLE_MODELS["google"]
+        if getattr(Config, "OLLAMA_BASE_URL", None):
+            available["ollama"] = AVAILABLE_MODELS["ollama"]
         return available
 

@@ -36,7 +36,10 @@ class TestGetClient:
             client = orig("openai", "gpt-4o")
             assert client is not None
 
-    @pytest.mark.parametrize("provider", ["openai", "anthropic", "groq", "google"])
+    @pytest.mark.parametrize(
+        "provider",
+        ["openai", "anthropic", "groq", "google", "ollama"],
+    )
     def test_supported_providers(self, provider, llm):
         """Each supported provider can instantiate without error when patched."""
         provider_patches = {
@@ -44,6 +47,7 @@ class TestGetClient:
             "anthropic": "langchain_anthropic.ChatAnthropic",
             "groq": "langchain_groq.ChatGroq",
             "google": "langchain_google_genai.ChatGoogleGenerativeAI",
+            "ollama": "langchain_ollama.ChatOllama",
         }
         with patch(provider_patches[provider]) as mock_cls:
             mock_cls.return_value = MagicMock()
@@ -188,11 +192,13 @@ class TestGetAvailableModels:
         mock_cfg.ANTHROPIC_API_KEY = ""
         mock_cfg.GROQ_API_KEY = ""
         mock_cfg.GEMINI_API_KEY = "gk-abc"
+        mock_cfg.OLLAMA_BASE_URL = ""
         result = LLMService.get_available_models()
         assert "openai" in result
         assert "google" in result
         assert "anthropic" not in result
         assert "groq" not in result
+        assert "ollama" not in result
 
     @patch("app.services.llm_service.Config")
     def test_empty_keys_returns_empty(self, mock_cfg):
@@ -201,4 +207,17 @@ class TestGetAvailableModels:
         mock_cfg.ANTHROPIC_API_KEY = ""
         mock_cfg.GROQ_API_KEY = ""
         mock_cfg.GEMINI_API_KEY = ""
+        mock_cfg.OLLAMA_BASE_URL = ""
         assert LLMService.get_available_models() == {}
+
+    @patch("app.services.llm_service.Config")
+    def test_ollama_when_base_url_set(self, mock_cfg):
+        """Ollama appears when OLLAMA_BASE_URL is non-empty."""
+        mock_cfg.OPENAI_API_KEY = ""
+        mock_cfg.ANTHROPIC_API_KEY = ""
+        mock_cfg.GROQ_API_KEY = ""
+        mock_cfg.GEMINI_API_KEY = ""
+        mock_cfg.OLLAMA_BASE_URL = "http://127.0.0.1:11434"
+        result = LLMService.get_available_models()
+        assert "ollama" in result
+        assert result["ollama"] == AVAILABLE_MODELS["ollama"]
