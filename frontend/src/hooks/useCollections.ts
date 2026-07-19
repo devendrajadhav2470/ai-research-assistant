@@ -13,9 +13,10 @@ export function useCollections() {
       setLoading(true);
       const data = await api.getCollections();
       setCollections(data);
-      // Auto-select first collection if none selected
+      // Prefer demo collection on first load so users can chat immediately
       if (!activeCollection && data.length > 0) {
-        setActiveCollection(data[0]);
+        const demo = data.find((c) => c.is_demo);
+        setActiveCollection(demo ?? data[0]);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load collections');

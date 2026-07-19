@@ -149,6 +149,7 @@ export default function App() {
             hasMoreMessages={hasMoreMessages}
             error={chatError}
             collectionName={activeCollection?.name ?? null}
+            isDemo={!!activeCollection?.is_demo}
             onSendMessage={handleSendMessage}
             onStopStreaming={stopStreaming}
             onEvaluate={handleEvaluate}
@@ -166,6 +167,7 @@ export default function App() {
           uploading={uploading}
           uploadProgress={uploadProgress}
           error={docError}
+          readOnly={!!activeCollection.is_demo}
           onUpload={uploadDocument}
           onDelete={removeDocument}
           onClose={() => setShowDocuments(false)}

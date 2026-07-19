@@ -18,6 +18,7 @@ interface DocumentUploadProps {
   uploading: boolean;
   uploadProgress: string | null;
   error: string | null;
+  readOnly?: boolean;
   onUpload: (file: File) => void;
   onDelete: (documentId: number) => void;
   onClose: () => void;
@@ -38,6 +39,7 @@ export default function DocumentUpload({
   uploading,
   uploadProgress,
   error,
+  readOnly = false,
   onUpload,
   onDelete,
   onClose,
@@ -45,10 +47,11 @@ export default function DocumentUpload({
 }: DocumentUploadProps) {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (acceptedFiles) => {
+      if (readOnly) return;
       acceptedFiles.forEach((file) => onUpload(file));
     },
     accept: { 'application/pdf': ['.pdf'], 'text/plain': ['.txt'] },
-    disabled: uploading,
+    disabled: readOnly || uploading,
     maxSize: 50 * 1024 * 1024,
     multiple: true,
   });
@@ -63,9 +66,14 @@ export default function DocumentUpload({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div>
-            <h2 className="text-lg font-bold text-text-primary">Manage Documents</h2>
+            <h2 className="text-lg font-bold text-text-primary">
+              {readOnly ? 'Demo Documents' : 'Manage Documents'}
+            </h2>
             <p className="text-sm text-text-secondary mt-0.5">
               Collection: <span className="font-medium text-primary-600">{collectionName}</span>
+              {readOnly && (
+                <span className="ml-2 text-xs text-amber-700">(read-only)</span>
+              )}
             </p>
           </div>
           <button
@@ -78,6 +86,11 @@ export default function DocumentUpload({
 
         {/* Upload Area */}
         <div className="p-6">
+          {readOnly ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              This is the shared Demo Collection. Create your own collection to upload documents.
+            </div>
+          ) : (
           <div
             {...getRootProps()}
             className={clsx(
@@ -111,6 +124,7 @@ export default function DocumentUpload({
               </div>
             )}
           </div>
+          )}
 
           {error && (
             <div className="mt-3 flex items-center gap-2 text-sm text-red-600 bg-red-50 px-4 py-2.5 rounded-xl">
@@ -157,13 +171,15 @@ export default function DocumentUpload({
                       <AlertCircle size={16} className="text-red-500" />
                     </span>
                   )}
-                  <button
-                    onClick={() => onDelete(doc.id)}
-                    className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-red-50 rounded-lg transition-all"
-                    title="Delete document"
-                  >
-                    <Trash2 size={14} className="text-red-400" />
-                  </button>
+                  {!readOnly && (
+                    <button
+                      onClick={() => onDelete(doc.id)}
+                      className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-red-50 rounded-lg transition-all"
+                      title="Delete document"
+                    >
+                      <Trash2 size={14} className="text-red-400" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

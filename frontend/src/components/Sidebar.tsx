@@ -214,6 +214,11 @@ export default function Sidebar({
                 <span className="truncate text-text-primary font-medium">
                   {activeCollection?.name || 'Select Collection'}
                 </span>
+                {activeCollection?.is_demo && (
+                  <span className="flex-shrink-0 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
+                    Demo
+                  </span>
+                )}
               </div>
               <ChevronDown
                 size={14}
@@ -243,20 +248,29 @@ export default function Sidebar({
                           : 'text-text-primary hover:bg-gray-50'
                       )}
                     >
-                      <span className="truncate block">{col.name}</span>
+                      <span className="truncate flex items-center gap-1.5">
+                        {col.name}
+                        {col.is_demo && (
+                          <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
+                            Demo
+                          </span>
+                        )}
+                      </span>
                       <span className="text-xs text-text-secondary">
                         {col.document_count} doc{col.document_count !== 1 ? 's' : ''}
                       </span>
                     </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteCollection(col.id);
-                      }}
-                      className="p-1.5 mr-1 opacity-0 group-hover:opacity-100 hover:bg-red-50 rounded-lg transition-all"
-                    >
-                      <Trash2 size={12} className="text-red-400" />
-                    </button>
+                    {!col.is_demo && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteCollection(col.id);
+                        }}
+                        className="p-1.5 mr-1 opacity-0 group-hover:opacity-100 hover:bg-red-50 rounded-lg transition-all"
+                      >
+                        <Trash2 size={12} className="text-red-400" />
+                      </button>
+                    )}
                   </div>
                 ))}
 
@@ -421,7 +435,7 @@ export default function Sidebar({
               className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-text-primary hover:bg-gray-50 rounded-xl transition-colors"
             >
               <FileText size={16} className="text-text-secondary" />
-              Add Documents
+              {activeCollection.is_demo ? 'View Documents' : 'Add Documents'}
             </button>
           )}
 

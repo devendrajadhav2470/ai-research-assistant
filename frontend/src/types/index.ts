@@ -13,6 +13,7 @@ export interface Collection {
   id: number;
   name: string;
   description: string;
+  is_demo?: boolean;
   document_count: number;
   created_at: string;
   updated_at: string | null;

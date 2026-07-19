@@ -60,9 +60,11 @@ class ChatService:
     def get_conversations_for_collection(
         self, collection_id: int
     ) -> List[Conversation]:
-        """Get all conversations for a collection, ordered by most recent."""
+        """Get the current user's conversations for a collection."""
         return (
-            Conversation.query.filter_by(collection_id=collection_id)
+            Conversation.query.filter_by(
+                collection_id=collection_id, user_id=g.user["id"]
+            )
             .order_by(Conversation.updated_at.desc())
             .all()
         )

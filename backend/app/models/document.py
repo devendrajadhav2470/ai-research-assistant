@@ -14,6 +14,7 @@ class Collection(db.Model):
     user_id = db.Column(db.String(40),db.ForeignKey("users.id"),nullable=False)
     name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, default="")
+    is_demo = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(
         db.DateTime, default=lambda: datetime.now(timezone.utc)
     )
@@ -40,6 +41,7 @@ class Collection(db.Model):
             "id": self.id,
             "name": self.name,
             "description": self.description,
+            "is_demo": bool(self.is_demo),
             "document_count": len(self.documents),
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,

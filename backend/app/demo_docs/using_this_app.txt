@@ -1,0 +1,20 @@
+Using the AI Research Assistant
+
+This demo collection lets you try the app without uploading your own files.
+
+Suggested workflow
+1. Ask a question about RAG, hybrid search, or how this assistant works.
+2. Read the answer and check the citation cards for source documents.
+3. Ask a follow-up to continue the conversation with prior context.
+4. Create your own collection when you are ready to upload PDFs.
+
+Collections
+- A collection is a workspace with its own documents and chat threads.
+- The Demo Collection is shared and read-only: you can chat, but not upload
+  or delete its sample documents.
+- Your personal collections are private to your account or guest session.
+
+Tips for better answers
+- Prefer specific questions over vague ones.
+- Mention the topic or document theme when you know it.
+- If the answer is incomplete, ask for more detail or missing aspects.

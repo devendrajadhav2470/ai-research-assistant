@@ -14,6 +14,7 @@ import {
 
 interface WelcomeScreenProps {
   collectionName: string | null;
+  isDemo?: boolean;
   onPromptClick: (prompt: string) => void;
 }
 
@@ -31,6 +32,7 @@ const featureRows = [
         title: '"Explain"',
         description: 'Key findings from the documents',
         prompt: 'Explain the key findings discussed in these documents.',
+        demoPrompt: 'What is Retrieval-Augmented Generation and why is it useful?',
         iconBg: 'bg-orange-100',
         iconColor: 'text-orange-500',
       },
@@ -39,6 +41,7 @@ const featureRows = [
         title: '"How to"',
         description: 'Summarize methodologies and approaches',
         prompt: 'How does the methodology work in these papers?',
+        demoPrompt: 'How does hybrid search combine semantic and keyword retrieval?',
         iconBg: 'bg-blue-100',
         iconColor: 'text-blue-500',
       },
@@ -57,6 +60,7 @@ const featureRows = [
         title: '"Remember"',
         description: 'Maintains context across your conversation',
         prompt: 'Summarize the main topics we discussed so far.',
+        demoPrompt: 'What are the main steps in a typical RAG pipeline?',
         iconBg: 'bg-purple-100',
         iconColor: 'text-purple-500',
       },
@@ -65,6 +69,7 @@ const featureRows = [
         title: '"Allows"',
         description: 'Follow-up questions and deeper analysis',
         prompt: 'Can you elaborate on the limitations discussed?',
+        demoPrompt: 'When does RAG struggle, and what should I do about it?',
         iconBg: 'bg-green-100',
         iconColor: 'text-green-500',
       },
@@ -83,6 +88,7 @@ const featureRows = [
         title: '"May"',
         description: 'Occasionally generate imprecise summaries',
         prompt: 'What are the potential inaccuracies to watch for?',
+        demoPrompt: 'How should I use this demo collection before uploading my own files?',
         iconBg: 'bg-red-100',
         iconColor: 'text-red-500',
       },
@@ -91,6 +97,7 @@ const featureRows = [
         title: '"Limited"',
         description: 'Knowledge limited to uploaded documents',
         prompt: 'Compare the results across all uploaded documents.',
+        demoPrompt: 'What is Reciprocal Rank Fusion used for in hybrid search?',
         iconBg: 'bg-amber-100',
         iconColor: 'text-amber-500',
       },
@@ -98,7 +105,11 @@ const featureRows = [
   },
 ];
 
-export default function WelcomeScreen({ collectionName, onPromptClick }: WelcomeScreenProps) {
+export default function WelcomeScreen({
+  collectionName,
+  isDemo = false,
+  onPromptClick,
+}: WelcomeScreenProps) {
   return (
     <div className="flex flex-col items-center justify-center h-full px-4 py-8 animate-fade-in">
       {/* Logo */}
@@ -112,8 +123,19 @@ export default function WelcomeScreen({ collectionName, onPromptClick }: Welcome
       </h1>
 
       {collectionName && (
-        <p className="mt-2 text-sm text-text-secondary text-center">
-          Ask questions about documents in <span className="font-medium text-primary-600">"{collectionName}"</span>
+        <p className="mt-2 text-sm text-text-secondary text-center max-w-xl">
+          {isDemo ? (
+            <>
+              Try the app with sample docs in{' '}
+              <span className="font-medium text-primary-600">"{collectionName}"</span>
+              . Create your own collection anytime to upload PDFs.
+            </>
+          ) : (
+            <>
+              Ask questions about documents in{' '}
+              <span className="font-medium text-primary-600">"{collectionName}"</span>
+            </>
+          )}
         </p>
       )}
 
@@ -149,7 +171,9 @@ export default function WelcomeScreen({ collectionName, onPromptClick }: Welcome
             {row.cards.map((card) => (
               <button
                 key={card.title}
-                onClick={() => onPromptClick(card.prompt)}
+                onClick={() =>
+                  onPromptClick(isDemo ? card.demoPrompt : card.prompt)
+                }
                 disabled={!collectionName}
                 className="group bg-white rounded-card p-4 border border-gray-100 shadow-card hover:shadow-card-hover hover:border-primary-200 transition-all text-left flex flex-col justify-between min-h-[120px] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-card"
               >
@@ -176,3 +200,4 @@ export default function WelcomeScreen({ collectionName, onPromptClick }: Welcome
     </div>
   );
 }
+

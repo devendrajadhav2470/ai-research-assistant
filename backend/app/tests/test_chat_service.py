@@ -134,9 +134,9 @@ class TestGetConversationsForCollection:
     """Tests for ChatService.get_conversations_for_collection."""
 
     def test_returns_conversations_for_collection(
-        self, sample_collection, sample_conversation, chat_service
+        self, sample_collection, sample_conversation, chat_service, user_context
     ):
-        """All conversations belonging to the collection are returned."""
+        """Current user's conversations for the collection are returned."""
         convs = chat_service.get_conversations_for_collection(
             sample_collection.id
         )
