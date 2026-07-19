@@ -421,7 +421,7 @@ export default function Sidebar({
               className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-text-primary hover:bg-gray-50 rounded-xl transition-colors"
             >
               <FileText size={16} className="text-text-secondary" />
-              Manage Documents
+              Add Documents
             </button>
           )}
 
