@@ -1,6 +1,6 @@
 """Collection CRUD API endpoints."""
 
-from flask import Blueprint, request, jsonify,g
+from flask import Blueprint, request, jsonify, g
 
 from app.extensions import db, limiter
 from app.api.auth import token_required
@@ -9,6 +9,8 @@ import logging
 from app.models.document import Collection
 from app.services.vector_store import VectorStore
 from app.services.bm25_index import BM25Index
+from app.services.collection_access import can_read_collection, can_write_collection
+
 logger = logging.getLogger(__name__)
 
 collections_bp = Blueprint("collections", __name__)
@@ -18,9 +20,18 @@ collections_bp = Blueprint("collections", __name__)
 @limiter.limit("60 per minute")
 @token_required
 def list_collections():
-    """List all collections of the current user"""
-    collections = Collection.query.filter_by(user_id=g.user['id']).order_by(Collection.created_at.desc()).all()
-    return jsonify([c.to_dict() for c in collections])
+    """List the shared demo (if any) plus the current user's collections."""
+    user_collections = (
+        Collection.query.filter_by(user_id=g.user["id"], is_demo=False)
+        .order_by(Collection.created_at.desc())
+        .all()
+    )
+    demo = Collection.query.filter_by(is_demo=True).first()
+    result = []
+    if demo:
+        result.append(demo.to_dict())
+    result.extend(c.to_dict() for c in user_collections)
+    return jsonify(result)
 
 
 @collections_bp.route("", methods=["POST"])
@@ -35,7 +46,8 @@ def create_collection():
     collection = Collection(
         name=data["name"],
         description=data.get("description", ""),
-        user_id=g.user["id"]
+        user_id=g.user["id"],
+        is_demo=False,
     )
 
     db.session.add(collection)
@@ -50,7 +62,7 @@ def create_collection():
 def get_collection(collection_id):
     """Get a specific collection."""
     collection = db.session.get(Collection, collection_id)
-    if not collection or not collection.user_id==g.user['id']:
+    if not can_read_collection(collection, g.user["id"]):
         return jsonify({"error": "Collection not found for the current user"}), 404
     return jsonify(collection.to_dict())
 
@@ -61,7 +73,7 @@ def get_collection(collection_id):
 def update_collection(collection_id):
     """Update a collection."""
     collection = db.session.get(Collection, collection_id)
-    if not collection or not collection.user_id==g.user['id']:
+    if not can_write_collection(collection, g.user["id"]):
         return jsonify({"error": "Collection not found for the current user"}), 404
 
     data = request.get_json()
@@ -80,7 +92,9 @@ def update_collection(collection_id):
 def delete_collection(collection_id):
     """Delete a collection and all associated data."""
     collection = db.session.get(Collection, collection_id)
-    if not collection or not collection.user_id==g.user['id']:
+    if collection and collection.is_demo:
+        return jsonify({"error": "The Demo Collection cannot be deleted"}), 403
+    if not can_write_collection(collection, g.user["id"]):
         return jsonify({"error": "Collection not found for the current user"}), 404
 
     # Clean up vector indices

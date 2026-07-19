@@ -8,6 +8,7 @@ from app.models.document import Collection, Chunk, Document
 from app.config import Config
 from app.api.auth import token_required
 from app.extensions import limiter
+from app.services.collection_access import can_read_collection
 import re
 
 logger = logging.getLogger(__name__)
@@ -30,7 +31,7 @@ def get_chunks():
     
     # validate collection id 
     collection = db.session.get(Collection, collection_id)
-    if not collection or not collection.user_id==g.user['id']:
+    if not can_read_collection(collection, g.user["id"]):
         return jsonify({"error": "Collection not found for the current user"}), 404    
     
     question = request_data.get("question", "").strip()
@@ -50,7 +51,7 @@ def get_chunks():
 def get_collection_stats(collection_id):
     # validate collection id 
     collection = db.session.get(Collection, collection_id)
-    if not collection or not collection.user_id==g.user['id']:
+    if not can_read_collection(collection, g.user["id"]):
         return jsonify({"error": "Collection not found for the current user"}), 404    
     
     # number of chunks in the collection 

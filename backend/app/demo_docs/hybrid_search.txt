@@ -1,0 +1,22 @@
+Hybrid Search for Document Retrieval
+
+Hybrid search mixes semantic (vector) search with keyword (lexical) search.
+
+Semantic search
+- Uses embedding models to compare meaning, not exact words.
+- Good for paraphrases: "reduce power use" can match "energy efficiency".
+- Weak when exact terms, IDs, or rare names matter.
+
+Keyword search (BM25)
+- Scores documents by term frequency and rarity (IDF).
+- Strong for exact matches: product codes, author names, error messages.
+- Weak when the question uses different vocabulary than the document.
+
+Combining results
+- Reciprocal Rank Fusion (RRF) merges ranked lists from both methods.
+- A cross-encoder reranker can then re-score the top candidates for precision.
+
+Practical tip
+Use hybrid retrieval when your corpus mixes conceptual explanations with
+precise terminology. Semantic search finds related ideas; BM25 catches the
+exact phrases the user typed.

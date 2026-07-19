@@ -1,0 +1,22 @@
+What is Retrieval-Augmented Generation (RAG)?
+
+Retrieval-Augmented Generation combines a search step with a language model.
+Instead of answering only from the model's training data, the system first
+retrieves relevant passages from a document collection, then asks the model
+to answer using those passages as context.
+
+Why RAG helps
+- Grounds answers in your own documents (papers, manuals, notes).
+- Reduces hallucinations by requiring evidence from retrieved text.
+- Makes citations possible: answers can point back to source files and pages.
+
+Typical RAG pipeline
+1. Ingest: parse documents, split them into chunks, and store embeddings.
+2. Retrieve: for a user question, find the most relevant chunks.
+3. Generate: send the question plus retrieved chunks to an LLM.
+4. Cite: attach source filenames and page numbers to the answer.
+
+When RAG struggles
+- Poor chunking can split important context across chunks.
+- Weak retrieval may miss the right passage even if it exists.
+- Questions outside the corpus should ideally result in a refusal.

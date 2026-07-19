@@ -60,8 +60,18 @@ def create_app(config_class=Config):
     with app.app_context():
         from app.models.document import Collection, Document, Chunk  # noqa: F401
         from app.models.chat import Conversation, Message  # noqa: F401
+        from app.models.user import User  # noqa: F401
 
         db.create_all()
+        if Config.SEED_DEMO_ON_STARTUP:
+            try:
+                from app.services.demo_seed import seed_demo_collection
+
+                seed_demo_collection()
+            except Exception as e:
+                logging.getLogger(__name__).warning(
+                    "Demo collection seed skipped/failed: %s", e
+                )
 
     # Health check endpoint
     @app.route("/api/health")

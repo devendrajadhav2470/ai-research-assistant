@@ -13,6 +13,7 @@ from flask import current_app
 import re
 from app.api.auth import token_required
 from app.extensions import limiter
+from app.services.collection_access import can_read_collection
 import time
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ chat_bp = Blueprint("chat", __name__)
 def list_conversations(collection_id):
     """List all conversations in a collection."""
     collection = db.session.get(Collection, collection_id)
-    if not collection or not collection.user_id==g.user['id']:
+    if not can_read_collection(collection, g.user["id"]):
         return jsonify({"error": "Collection not found for the current user"}), 404
 
     chat_service = ChatService()
@@ -45,7 +46,7 @@ def create_conversation():
         return jsonify({"error": "collection_id is required"}), 400
 
     collection = db.session.get(Collection, data["collection_id"])
-    if not collection or not collection.user_id==g.user['id']:
+    if not can_read_collection(collection, g.user["id"]):
         return jsonify({"error": "Collection not found for the current user"}), 404
 
     chat_service = ChatService()
@@ -160,7 +161,7 @@ def query():
         return jsonify({"error": "collection_id is required"}), 400
 
     collection = db.session.get(Collection, collection_id)
-    if not collection or not collection.user_id==g.user['id']:
+    if not can_read_collection(collection, g.user["id"]):
         return jsonify({"error": "Collection not found for the current user"}), 404
 
     conversation_id = data.get("conversation_id")
@@ -253,7 +254,7 @@ def query_stream():
         return jsonify({"error": "collection_id is required"}), 400
 
     collection = db.session.get(Collection, collection_id)
-    if not collection or not collection.user_id==g.user['id']:
+    if not can_read_collection(collection, g.user["id"]):
         return jsonify({"error": "Collection not found for the current user"}), 404
 
     conversation_id = data.get("conversation_id")

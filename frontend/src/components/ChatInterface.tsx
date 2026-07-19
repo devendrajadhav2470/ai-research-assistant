@@ -17,6 +17,7 @@ interface ChatInterfaceProps {
   hasMoreMessages: boolean;
   error: string | null;
   collectionName: string | null;
+  isDemo?: boolean;
   onSendMessage: (message: string) => void;
   onStopStreaming: () => void;
   onEvaluate: (messageId: number) => void;
@@ -34,6 +35,7 @@ export default function ChatInterface({
   hasMoreMessages,
   error,
   collectionName,
+  isDemo = false,
   onSendMessage,
   onStopStreaming,
   onEvaluate,
@@ -101,7 +103,11 @@ export default function ChatInterface({
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto" ref={containerRef} onScroll={onScroll}>
         {showWelcome ? (
-          <WelcomeScreen collectionName={collectionName} onPromptClick={handlePromptClick} />
+          <WelcomeScreen
+            collectionName={collectionName}
+            isDemo={isDemo}
+            onPromptClick={handlePromptClick}
+          />
         ) : (
           <div className="px-4 sm:px-6 py-6">
             <div className="max-w-3xl mx-auto space-y-5">

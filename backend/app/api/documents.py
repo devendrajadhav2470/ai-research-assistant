@@ -21,6 +21,7 @@ from app.services.bm25_index import BM25Index
 from app.config import Config
 from app.api.auth import token_required
 from app.extensions import limiter
+from app.services.collection_access import can_read_collection, can_write_collection
 import json 
 from typing import List
 
@@ -101,7 +102,7 @@ def create_presigned_get_url(
 def list_documents(collection_id):
     """List all documents in a collection."""
     collection = db.session.get(Collection, collection_id)
-    if not collection or not collection.user_id==g.user['id']:
+    if not can_read_collection(collection, g.user["id"]):
         return jsonify({"error": "Collection not found for the current user"}), 404
     documents = (
         Document.query.filter_by(collection_id=collection_id)
@@ -119,7 +120,9 @@ def get_upload_url(collection_id):
     SUPPORTED_FILE_TYPES = [".pdf"]
 
     collection = db.session.get(Collection, collection_id)
-    if not collection or not collection.user_id==g.user['id']:
+    if not can_write_collection(collection, g.user["id"]):
+        if collection and collection.is_demo:
+            return jsonify({"error": "The Demo Collection is read-only"}), 403
         return jsonify({"error": "Collection not found for the current user"}), 404
     
 
@@ -161,7 +164,9 @@ def upload_document(collection_id):
 
     SUPPORTED_FILE_TYPES = [".pdf",".txt"]
     collection = db.session.get(Collection, collection_id)
-    if not collection or not collection.user_id==g.user['id']:
+    if not can_write_collection(collection, g.user["id"]):
+        if collection and collection.is_demo:
+            return jsonify({"error": "The Demo Collection is read-only"}), 403
         return jsonify({"error": "Collection not found for the current user"}), 404
     if "file" not in request.files:
         return jsonify({"error": "No file provided"}), 400
@@ -292,7 +297,7 @@ def get_document(document_id):
     if not document:
         return jsonify({"error": "Document not found"}), 404
     collection = db.session.get(Collection,document.collection_id)
-    if not collection or not collection.user_id==g.user['id']:
+    if not can_read_collection(collection, g.user["id"]):
         return jsonify({"error": "Collection not found for the current user"}), 404
     return jsonify(document.to_dict())
 
@@ -308,7 +313,9 @@ def delete_document(document_id):
 
     collection_id = document.collection_id
     collection = db.session.get(Collection,document.collection_id)
-    if not collection or not collection.user_id==g.user['id']:
+    if not can_write_collection(collection, g.user["id"]):
+        if collection and collection.is_demo:
+            return jsonify({"error": "The Demo Collection is read-only"}), 403
         return jsonify({"error": "Collection not found for the current user"}), 404
     # Remove from vector store
     try:

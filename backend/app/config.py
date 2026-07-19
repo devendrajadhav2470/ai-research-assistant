@@ -63,3 +63,6 @@ class Config:
     TESSERACT_EXE_PATH = os.getenv("TESSERACT_EXE_PATH","")
 
     S3_BUCKET = os.getenv("S3_BUCKET","amzn-s3-bookrag-bucket")
+
+    # Shared Demo Collection (seeded on startup)
+    SEED_DEMO_ON_STARTUP = os.getenv("SEED_DEMO_ON_STARTUP", "1") == "1"
