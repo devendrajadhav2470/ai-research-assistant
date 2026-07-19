@@ -2,6 +2,7 @@
 
 import logging
 import json
+import time
 from typing import Generator, List, Dict, Any, Optional
 from app.services.utils.format_context import format_context
 from app.services.retriever import HybridRetriever
@@ -84,11 +85,14 @@ class RAGPipeline:
             Dict with 'answer', 'citations', 'chunks', 'model_info'.
         """
         # Step 1: Retrieve relevant chunks
+        ts = time.time()
         chunks = self.retriever.retrieve(
             collection_id=collection_id,
             query=question,
             top_k=top_k,
         )
+        te = time.time()
+        logger.info(f"RETRIEVAL TIME: {(te-ts)*1000} ms")
 
         # Step 2: Build messages with context and chat history
         messages = self._build_messages(
@@ -98,11 +102,14 @@ class RAGPipeline:
         )
 
         # Step 3: Generate answer
+        ts = time.time()
         answer = self.llm_service.generate(
             messages=messages,
             provider=provider,
             model_name=model_name,
         )
+        te = time.time()
+        logger.info(f"GENERATION TIME: {(te-ts)*1000} ms")
 
         # Step 4: Extract citations
         citations = self._extract_citations(chunks)
@@ -222,7 +229,7 @@ class RAGPipeline:
         """Build the message list for the LLM with context and chat history."""
         # Format context from chunks
         context = format_context(chunks)
-        print(context)
+        # print(context)
         # System prompt with context
         system_prompt = RAG_SYSTEM_PROMPT.format(context=context)
 
@@ -245,7 +252,7 @@ class RAGPipeline:
                 "content": RAG_USER_PROMPT_TEMPLATE.format(question=question)
             })
             
-        print(messages)
+        # print(messages)
         return messages
 
 

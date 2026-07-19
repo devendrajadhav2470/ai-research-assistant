@@ -2,7 +2,7 @@
 
 import logging
 from typing import List, Dict, Any, Tuple
-
+import time
 
 from sentence_transformers import CrossEncoder
 from flask import current_app
@@ -64,23 +64,33 @@ class HybridRetriever:
         top_k = top_k or self.top_k_rerank
 
         # Step 1: Vector search
+        ts = time.time()
         query_embedding = self.embedding_service.embed_query(query)
+        te = time.time()
+        logger.info(f"QUERY EMBEDDING TIME: {(te-ts)*1000} ms")
+
+        ts = time.time()
         vector_results = self.vector_store.search(
             collection_id=collection_id,
             query_embedding=query_embedding,
             top_k=self.top_k_retrieval,
             dimension=self.embedding_service.dimension,
         )
+        te = time.time()
+        logger.info(f"VECTOR SEARCH TIME: {(te-ts)*1000} ms")
 
         if not vector_results:
             logger.info(f"no vectors found in vector_store for the query")
             
         # Step 2: BM25 keyword search
+        ts = time.time()
         bm25_results = self.bm25_index.search(
             collection_id=collection_id,
             query=query,
             top_k=self.top_k_retrieval,
         )
+        te = time.time()
+        logger.info(f"BM25 Index SEARCH TIME: {(te-ts)*1000} ms")
 
         # Step 3: Reciprocal Rank Fusion
         fused_results = self._reciprocal_rank_fusion(vector_results, bm25_results)
@@ -89,8 +99,10 @@ class HybridRetriever:
             return []
 
         # Step 4: Cross-encoder reranking
+        ts = time.time()
         reranked = self._rerank(query, fused_results, top_k)
-
+        te = time.time()
+        logger.info(f"RERANKING TIME: {(te-ts) * 1000} ms")
         logger.info(
             f"Hybrid retrieval for collection {collection_id}: "
             f"vector={len(vector_results)}, bm25={len(bm25_results)}, "
